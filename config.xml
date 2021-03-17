@@ -12,4 +12,7 @@
         <config name="cert">domain.crt</config>
         <config name="key">domain.key</config>
     </RESTful>
+    <database>
+        <config name="verbose">DEBUG</config>
+    </database>
 </config>
