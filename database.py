@@ -33,6 +33,7 @@ class Database:
 
         The configuration of the database is done through the config.xml configuration file.
         """
+        self._parse_configuration()
         self._db = {}
 
         self._logger = common.get_logger(type(self).__name__, self._config["verbose"])
@@ -51,7 +52,7 @@ class Database:
 
         assert ("verbose" in self._config)
 
-    def put_user(self, user: str, entry: dict) -> None:
+    def put_user(self, user: str, entry: dict) -> bool:
         """
         Insert an entry into a user (creates the user if the user is new) in the database.
 
@@ -63,7 +64,9 @@ class Database:
 
         self._logger.debug(f"{user} <- {entry}")
 
-        self._db["user"][user] = entry
+        self._db["users"][user] = entry
+
+        return True
 
     def update_user_entry(self, user: str, key: str, value) -> None:
         """
@@ -74,6 +77,7 @@ class Database:
         :param value: The value to update the key value to.
         """
         if user in self._db["users"] and key in self._db["users"][user]:
+            self._logger.debug(f"{user} <- {key}:{value}")
             self._db["users"][user][key] = value
 
     def get_user(self, user: str) -> dict or None:

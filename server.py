@@ -22,6 +22,7 @@ import xml.etree.ElementTree
 import asyncio
 import time
 import database
+import user_management
 
 
 class Server:
@@ -42,6 +43,7 @@ class Server:
 
         self._restful = restful.Restful()
         self._db = database.Database()
+        self._usr_mgmt = user_management.UserManagement()
 
     def _parse_configuration(self):
         self._config = {}
@@ -69,11 +71,14 @@ class Server:
     def _restful_serve(self, request: restful.RestfulRequest) -> tuple:
         self._logger.info(f"Serving: {request}")
 
-        request_handlers = {"GET": lambda req, fil: self._restful_server_get_request(req, fil)}
+        request_handlers = {
+            "GET": lambda req: self._restful_serve_get_request(req),
+            "POST": lambda req: self._restful_serve_post_request(req)
+        }
 
         if request.get_type() in request_handlers:
             try:
-                response, epoch = request_handlers[request.get_type()](request, request.get_filters())
+                response, epoch = request_handlers[request.get_type()](request)
             except Exception as exc:
                 raise exc
         else:
@@ -81,12 +86,15 @@ class Server:
 
         return response, epoch
 
-    def _restful_server_get_request(self, request: restful.RestfulRequest, filters: dict) -> tuple:
-        dataset_handlers = {"auth_user": lambda req, fil: self._restful_serve_get_name_request(req, fil)}
+    def _restful_serve_post_request(self, request: restful.RestfulRequest):
+        dataset_handlers = {
+            "users": lambda req, fil: self._restful_serve_post_users_request(req, fil)
+        }
+        text = request.get_text()
 
         if request.get_datasets()[0] in dataset_handlers:
             try:
-                response, epoch = dataset_handlers[request.get_datasets()[0]](request, filters)
+                response, epoch = dataset_handlers[request.get_datasets()[0]](request, text)
             except Exception as exc:
                 raise exc
         else:
@@ -94,11 +102,29 @@ class Server:
 
         return response, epoch
 
-    def _restful_serve_get_name_request(self, request: restful.RestfulRequest, filters: dict) -> tuple:
-        print(request)
-        print(filters)
+    def _restful_serve_post_users_request(self, request: restful.RestfulRequest, text: dict) -> tuple:
+        return self._usr_mgmt.create_user(text["username"], text["password"]), time.time()
 
-        return "user", time.time()
+    def _restful_serve_get_request(self, request: restful.RestfulRequest) -> tuple:
+        dataset_handlers = {
+            "auth_user": lambda req: self._restful_serve_get_user_auth_request(req)
+        }
+
+        if request.get_datasets()[0] in dataset_handlers:
+            try:
+                response, epoch = dataset_handlers[request.get_datasets()[0]](request)
+            except Exception as exc:
+                raise exc
+        else:
+            raise NotImplementedError
+
+        return response, epoch
+
+    def _restful_serve_get_user_auth_request(self, request: restful.RestfulRequest) -> tuple:
+        filters = request.get_filters()
+        username = filters["username"]
+        password = filters["password"]
+        return self._usr_mgmt.is_auth_user(username, password), time.time()
 
     def __enter__(self):
         return self
