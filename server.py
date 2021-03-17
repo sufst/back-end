@@ -21,6 +21,7 @@ import restful
 import xml.etree.ElementTree
 import asyncio
 import time
+import database
 
 
 class Server:
@@ -40,6 +41,7 @@ class Server:
         self._logger.info(f"Configuration: {self._config}")
 
         self._restful = restful.Restful()
+        self._db = database.Database()
 
     def _parse_configuration(self):
         self._config = {}
