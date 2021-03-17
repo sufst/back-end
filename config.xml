@@ -15,4 +15,7 @@
     <database>
         <config name="verbose">DEBUG</config>
     </database>
+    <userManagement>
+        <config name="verbose">DEBUG</config>
+    </userManagement>
 </config>

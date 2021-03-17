@@ -33,7 +33,7 @@ class RestfulRequest:
         """
         self._request_str = request_str
 
-        self._dataset, self._filters, self._type = None, [], None
+        self._dataset, self._filters, self._type = None, {}, None
 
         self._decode_request()
 
@@ -41,45 +41,72 @@ class RestfulRequest:
         """
         Decode the RESTful request string to determine the type, dataset, and filters wanted.
         """
-        # Decode GET /sensors/RPM?timesince=<epoch>&amount=<n>
+
+        type_decoders = {
+            "GET": lambda x: self._decode_get_request(x),
+            "PUT": lambda x: self._decode_put_request(x),
+            "POST": lambda x: self._decode_post_request(x)
+        }
+
         split_space = self._request_str.split(" ")
         self._type = split_space[0]
+
+        if self._type in type_decoders:
+            type_decoders[self._type](split_space)
+        else:
+            raise NotImplementedError
+
+    def _decode_post_request(self, split_space: str):
+        # Decode POST /users {"username": "username", "password": "password"}
+        self._dataset = split_space[1]
+        self._datasets = self._dataset.split("/")[1:]
+        self._text = json.loads(split_space[2])
+
+    def _decode_put_request(self, split_space: str):
+        raise NotImplementedError
+
+    def _decode_get_request(self, split_space: str):
+        # Decode GET /sensors/RPM?timesince=<epoch>&amount=<n>
+
         split_question = split_space[1].split("?")
         self._dataset = split_question[0]
         self._datasets = self._dataset.split("/")[1:]
         split_and = split_question[1].split("&")
 
         if not split_and[0] == '':
-            for fil in split_and:
-                self._filters.extend([tuple(fil.split("="))])
+            for fil_value in split_and:
+                entry = fil_value.split("=")
+                self._filters[entry[0]] = entry[1]
 
     def get_type(self) -> str:
         """
         Get the type of the request.
-        :return: The type.
         """
         return self._type
 
     def get_dataset(self) -> str:
         """
         Get the dataset (in a single string combined).
-        :return: The dataset.
         """
         return self._dataset
 
     def get_datasets(self) -> list:
         """
         Get the datasets (in a list form )
-        :return:
         """
         return self._datasets
 
-    def get_filters(self) -> list:
+    def get_filters(self) -> dict:
         """
-        Get the filters (in the form of a list of tuples(filter, value)).
-        :return:
+        Get the filters.
         """
         return self._filters
+
+    def get_text(self) -> dict:
+        """
+        Get the text (dictionary) of a POST request.
+        """
+        return self._text
 
     def __str__(self) -> str:
         return str({"type": self._type, "dataset": self._dataset, "filters": self._filters})
