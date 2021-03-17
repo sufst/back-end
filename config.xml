@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <server>
+        <config name="verbose">DEBUG</config>
+    </server>
+    <RESTful>
+        <config name="url">localhost</config>
+        <config name="port">8767</config>
+        <config name="verbose">DEBUG</config>
+        <config name="keep_alive">True</config>
+        <config name="secure">True</config>
+        <config name="cert">domain.crt</config>
+        <config name="key">domain.key</config>
+    </RESTful>
+</config>
