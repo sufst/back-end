@@ -23,6 +23,8 @@ import asyncio
 import time
 import database
 import user_management
+import jwt
+import os
 
 
 class Server:
@@ -44,6 +46,8 @@ class Server:
         self._restful = restful.Restful()
         self._db = database.Database()
         self._usr_mgmt = user_management.UserManagement()
+
+        self._token_key = os.urandom(16)
 
     def _parse_configuration(self):
         self._config = {}
@@ -71,60 +75,92 @@ class Server:
     def _restful_serve(self, request: restful.RestfulRequest) -> tuple:
         self._logger.info(f"Serving: {request}")
 
-        request_handlers = {
-            "GET": lambda req: self._restful_serve_get_request(req),
-            "POST": lambda req: self._restful_serve_post_request(req)
+        handlers = {
+            "GET": {
+                "/admin_test": {
+                    "access": "admin",
+                    "handler": lambda req: (True, time.time())
+                },
+                "/user_test": {
+                    "access": "user",
+                    "handler": lambda req: (True, time.time())
+                }
+            },
+            "POST": {
+                "/users": {
+                    "access": "anyone",
+                    "handler": lambda req: self._restful_serve_post_users_request(req)
+                },
+                "/users/token": {
+                    "access": "anyone",
+                    "handler": lambda req: self._restful_serve_post_users_token_request(req)
+                }
+            },
+            "PUT": {
+
+            },
+            "DELETE": {
+
+            }
         }
 
-        if request.get_type() in request_handlers:
-            try:
-                response, epoch = request_handlers[request.get_type()](request)
-            except Exception as exc:
-                raise exc
+        req_type = request.get_type()
+        if req_type in handlers:
+            req_dataset = request.get_dataset()
+            if req_dataset in handlers[req_type]:
+                if handlers[req_type][req_dataset]["access"] != "anyone":
+                    if self._restful_does_client_has_access()
+                try:
+                    response, epoch = handlers[req_type][req_dataset](request)
+                except Exception as exc:
+                    raise exc
+            else:
+                raise NotImplementedError
         else:
             raise NotImplementedError
 
         return response, epoch
 
-    def _restful_serve_post_request(self, request: restful.RestfulRequest):
-        dataset_handlers = {
-            "users": lambda req, fil: self._restful_serve_post_users_request(req, fil)
+    def _restful_does_client_has_access(self, request: restful.RestfulRequest, privilege: str) -> bool:
+        privilege_to_level = {
+            "user": 0,
+            "admin": 1
         }
+
+        get_token_from_request_type = {
+            "GET": lambda req: req.get_filters()["token"],
+            "PUT": lambda req: req.get_text()["token"],
+
+        }
+
+        decoded_token = jwt.decode(token, self._token_key, algorithms=["HS256"])
+
+        # user (0) >= admin (1) -> False
+        # admin (1) >= user (0) -> True
+        if decoded_token["privilege"] >= privilege_to_level[privilege]:
+            return True
+        else:
+            return False
+
+    def _restful_serve_post_users_token_request(self, request: restful.RestfulRequest) -> tuple:
+        response = {}
+
         text = request.get_text()
+        username = text["username"]
+        password = text["password"]
 
-        if request.get_datasets()[0] in dataset_handlers:
-            try:
-                response, epoch = dataset_handlers[request.get_datasets()[0]](request, text)
-            except Exception as exc:
-                raise exc
+        if self._usr_mgmt.is_auth_user(username, password):
+            response["valid_user"] = True
+            response["token"] = jwt.encode(
+                {"username": username, "privilege": "user"}, self._token_key, algorithm="HS256")
         else:
-            raise NotImplementedError
+            response["valid_user"] = False
 
-        return response, epoch
+        return response, time.time()
 
-    def _restful_serve_post_users_request(self, request: restful.RestfulRequest, text: dict) -> tuple:
+    def _restful_serve_post_users_request(self, request: restful.RestfulRequest) -> tuple:
+        text = request.get_text()
         return self._usr_mgmt.create_user(text["username"], text["password"]), time.time()
-
-    def _restful_serve_get_request(self, request: restful.RestfulRequest) -> tuple:
-        dataset_handlers = {
-            "auth_user": lambda req: self._restful_serve_get_user_auth_request(req)
-        }
-
-        if request.get_datasets()[0] in dataset_handlers:
-            try:
-                response, epoch = dataset_handlers[request.get_datasets()[0]](request)
-            except Exception as exc:
-                raise exc
-        else:
-            raise NotImplementedError
-
-        return response, epoch
-
-    def _restful_serve_get_user_auth_request(self, request: restful.RestfulRequest) -> tuple:
-        filters = request.get_filters()
-        username = filters["username"]
-        password = filters["password"]
-        return self._usr_mgmt.is_auth_user(username, password), time.time()
 
     def __enter__(self):
         return self
