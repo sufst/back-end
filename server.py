@@ -77,11 +77,24 @@ class Server:
 
         handlers = {
             "GET": {
-
+                "/admin_test": {
+                    "access": "admin",
+                    "handler": lambda req: (True, time.time())
+                },
+                "/user_test": {
+                    "access": "user",
+                    "handler": lambda req: (True, time.time())
+                }
             },
             "POST": {
-                "/users": lambda req: self._restful_serve_post_users_request(req),
-                "/users/token": lambda req: self._restful_serve_post_users_token_request(req)
+                "/users": {
+                    "access": "anyone",
+                    "handler": lambda req: self._restful_serve_post_users_request(req)
+                },
+                "/users/token": {
+                    "access": "anyone",
+                    "handler": lambda req: self._restful_serve_post_users_token_request(req)
+                }
             },
             "PUT": {
 
@@ -95,6 +108,8 @@ class Server:
         if req_type in handlers:
             req_dataset = request.get_dataset()
             if req_dataset in handlers[req_type]:
+                if handlers[req_type][req_dataset]["access"] != "anyone":
+                    if self._restful_does_client_has_access()
                 try:
                     response, epoch = handlers[req_type][req_dataset](request)
                 except Exception as exc:
@@ -105,6 +120,27 @@ class Server:
             raise NotImplementedError
 
         return response, epoch
+
+    def _restful_does_client_has_access(self, request: restful.RestfulRequest, privilege: str) -> bool:
+        privilege_to_level = {
+            "user": 0,
+            "admin": 1
+        }
+
+        get_token_from_request_type = {
+            "GET": lambda req: req.get_filters()["token"],
+            "PUT": lambda req: req.get_text()["token"],
+
+        }
+
+        decoded_token = jwt.decode(token, self._token_key, algorithms=["HS256"])
+
+        # user (0) >= admin (1) -> False
+        # admin (1) >= user (0) -> True
+        if decoded_token["privilege"] >= privilege_to_level[privilege]:
+            return True
+        else:
+            return False
 
     def _restful_serve_post_users_token_request(self, request: restful.RestfulRequest) -> tuple:
         response = {}

@@ -17,7 +17,6 @@
 """
 import asyncio
 import json
-
 import websockets
 import ssl
 
