@@ -1,5 +1,5 @@
 """
-    Southampton University Formula Student Team Intermediate Server
+    Southampton University Formula Student Team Back-End
     Copyright (C) 2021 Nathan Rowley-Smith
 
     This program is free software: you can redistribute it and/or modify
@@ -15,16 +15,36 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import flask_restful
+import json
+import flask
+import common.user_management
+import flask_jwt_extended
 
-import server
 
-_SW_VERSION = "0.1.0"
+class Users(flask_restful.Resource):
+    _user_management = common.user_management.UserManagement().instance()
 
+    """
+    users
+    """
 
-if __name__ == '__main__':
-    print(f"Intermediate Server build {_SW_VERSION} Copyright (C) 2021 Nathan Rowley-Smith\n" +
-          "This program comes with ABSOLUTELY NO WARRANTY;\n" +
-          "This is free software, and you are welcome to redistribute it")
+    @flask_jwt_extended.jwt_required()
+    def get(self, username):
+        """
+        get
+        """
+        user = flask_jwt_extended.get_jwt_identity()
 
-    with server.Server() as backend:
-        backend.serve_forever()
+        return {"username": user, "beans": True}
+
+    def post(self, username):
+        """
+        post
+        """
+        meta = json.loads(flask.request.data)
+
+        self._user_management.create_user(username, meta)
+
+        return meta
+
