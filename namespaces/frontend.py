@@ -15,28 +15,29 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import flask_jwt_extended
-import flask_restful
+import flask_socketio
 import flask
 import common.user_management
-import json
-import common.user
 
 
-class Login(flask_restful.Resource):
+class FrontEnd(flask_socketio.Namespace):
     _userManagement = common.user_management.UserManagement().instance()
 
-    def post(self):
-        request = json.loads(flask.request.data)
+    def on_connect(self):
+        print("connected")
+        access_token = flask.request.args.get("access_token")
+        if not self._userManagement.is_valid_access_token(access_token):
+            raise ConnectionRefusedError("Unauthorized access token")
 
-        user = self._userManagement.get_user_from_username(request["username"])
+        user = self._userManagement.get_user_from_access_token(access_token)
 
-        if not self._userManagement.is_user_valid(user, request["password"]):
-            return {"msg": "Bad username or password"}, 401
+        print(f"{user.username} connected to {self.namespace}")
 
-        access_token = flask_jwt_extended.create_access_token(identity=user.id)
+    def on_message(self, data):
+        print('message received with ', data)
 
-        self._userManagement.put_access_token_to_user(user, access_token)
+    def on_event_config(self, data):
+        print('config received with ', data)
 
-        return flask.jsonify(access_token=access_token)
-
+    def on_disconnect(self):
+        print('disconnected from client')
