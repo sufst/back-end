@@ -27,41 +27,30 @@ import flask_jwt_extended
 import os
 import flask_socketio
 import flask_pymongo
-
+import namespaces.frontend
+import flask_login
 
 app = flask.Flask(__name__)
-app.config['SECRET_KEY'] = 'secret!'
-flask_cors.CORS(app)
-api = flask_restful.Api(app)
-app.config["MONGO_URI"] = "mongodb://localhost:27017/local"
 app.config["JWT_SECRET_KEY"] = os.urandom(16)
 app.config["SECRET_KEY"] = os.urandom(16)
+app.config["MONGO_URI"] = "mongodb://localhost:27017/local"
 
-socket_io = flask_socketio.SocketIO(app, cors_allowed_origins="*")
+socketIO = flask_socketio.SocketIO(app, cors_allowed_origins="*", manage_session=False)
 jwt = flask_jwt_extended.JWTManager(app)
-
 mongo = flask_pymongo.PyMongo(app)
+loginManager = flask_login.LoginManager(app)
+loginManager.init_app(app)
+api = flask_restful.Api(app)
 
+
+loginManager.request_loader(common.user_management.UserManagement().instance().request_loader)
+flask_cors.CORS(app)
 common.database.Database().init_db(mongo_db=mongo)
 
 api.add_resource(resources.users.Users, "/users/<string:username>")
 api.add_resource(resources.login.Login, "/login")
 
+socketIO.on_namespace(namespaces.frontend.FrontEnd("/frontend"))
 
-@socket_io.on('connect')
-def test_connect():
-    print("connect")
-
-
-@socket_io.on('message')
-def my_message(data):
-    print('message received with ', data)
-
-
-@socket_io.on('disconnect')
-def disconnect():
-    print('disconnected from client')
-
-
-socket_io.run(app, host="0.0.0.0", port=5000, certfile='domain.crt', keyfile='domain.key')
+socketIO.run(app, host="0.0.0.0", port=5000, certfile='domain.crt', keyfile='domain.key')
 

@@ -42,8 +42,11 @@ class Database:
         return user
 
     def get_user_from_user_id(self, user_id: str) -> common.user.User or None:
-        user = common.user.User().from_record(self._mongo.db.user_accounts.find_one(
-            {"_id": bson.objectid.ObjectId(user_id)}))
+        record = self._mongo.db.user_accounts.find_one({"_id": bson.objectid.ObjectId(user_id)})
+        if record:
+            user = common.user.User().from_record(record)
+        else:
+            user = None
 
         return user
 

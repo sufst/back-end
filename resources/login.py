@@ -21,19 +21,26 @@ import flask
 import common.user_management
 import json
 import common.user
+import flask_login
 
 
 class Login(flask_restful.Resource):
-    _user_management = common.user_management.UserManagement().instance()
+    _userManagement = common.user_management.UserManagement().instance()
 
     def post(self):
         request = json.loads(flask.request.data)
 
-        user = self._user_management.get_user_from_username(request["username"])
+        user = self._userManagement.get_user_from_username(request["username"])
 
-        if not self._user_management.is_user_valid(user, request["password"]):
+        if not self._userManagement.is_user_valid(user, request["password"]):
             return {"msg": "Bad username or password"}, 401
 
         access_token = flask_jwt_extended.create_access_token(identity=user.id)
+
+        if flask_login.login_user(user, force=True):
+            print(f"logged in {user.get_id()}")
+
+        self._userManagement.put_access_token_to_user(user, access_token)
+
         return flask.jsonify(access_token=access_token)
 

@@ -15,14 +15,18 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import flask_login
 
 
-class User:
+class User(flask_login.UserMixin):
     def __init__(self):
         self.id = None
         self.username = None
         self.key = None
         self.salt = None
+
+    def get_id(self):
+        return self.id
 
     def from_record(self, record: dict):
         if record is None:
