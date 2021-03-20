@@ -15,28 +15,37 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import flask_pymongo
-import common.user
 
 
-class Database:
-    _instance = None
+class User:
+    def __init__(self):
+        self.id = None
+        self.username = None
+        self.key = None
+        self.salt = None
 
-    @classmethod
-    def instance(cls):
-        if cls._instance is None:
-            cls._instance = cls.__new__(cls)
-        return cls._instance
+    def from_record(self, record: dict):
+        if record is None:
+            return None
 
-    @classmethod
-    def init_db(cls, mongo_db: flask_pymongo.PyMongo):
-        cls._mongo = mongo_db
+        self.id = str(record["_id"])
+        self.username = record["username"]
+        self.key = record["key"]
+        self.salt = record["salt"]
 
-    def create_user(self, user: common.user.User) -> None:
-        self._mongo.db.user_accounts.insert_one(user.get_record())
+        return self
 
-    def get_user_from_username(self, username: str) -> common.user.User or None:
-        user = common.user.User().from_record(self._mongo.db.user_accounts.find_one({"username": username}))
+    def from_values(self, username: str, key: bytes, salt: bytes):
+        self.username = username
+        self.key = key
+        self.salt = salt
 
-        return user
+        return self
+
+    def get_record(self):
+        return {
+            "username": self.username,
+            "key": self.key,
+            "salt": self.salt
+        }
 

@@ -16,37 +16,52 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import logging
-import xml.etree.ElementTree
 import flask
-import ssl
 import flask_cors
 import resources.users
 import resources.login
 import flask_restful
-import flaskext.mysql
 import common.database
 import common.user_management
 import flask_jwt_extended
 import os
+import flask_socketio
+import flask_pymongo
+
 
 app = flask.Flask(__name__)
+app.config['SECRET_KEY'] = 'secret!'
 flask_cors.CORS(app)
 api = flask_restful.Api(app)
-mysql = flaskext.mysql.MySQL()
-mysql.init_app(app)
+app.config["MONGO_URI"] = "mongodb://localhost:27017/local"
 app.config["JWT_SECRET_KEY"] = os.urandom(16)
+app.config["SECRET_KEY"] = os.urandom(16)
 
-common.database.Database().instance()
-common.user_management.UserManagement().instance()
-
+socket_io = flask_socketio.SocketIO(app, cors_allowed_origins="*")
 jwt = flask_jwt_extended.JWTManager(app)
 
+mongo = flask_pymongo.PyMongo(app)
 
-ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-ssl_context.load_cert_chain('domain.crt', 'domain.key')
+common.database.Database().init_db(mongo_db=mongo)
 
 api.add_resource(resources.users.Users, "/users/<string:username>")
 api.add_resource(resources.login.Login, "/login")
 
-app.run(ssl_context=ssl_context)
+
+@socket_io.on('connect')
+def test_connect():
+    print("connect")
+
+
+@socket_io.on('message')
+def my_message(data):
+    print('message received with ', data)
+
+
+@socket_io.on('disconnect')
+def disconnect():
+    print('disconnected from client')
+
+
+socket_io.run(app, host="0.0.0.0", port=5000, certfile='domain.crt', keyfile='domain.key')
+

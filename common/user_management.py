@@ -19,6 +19,7 @@ import hashlib
 import common.database
 import os
 import werkzeug.security
+import common.user
 
 
 class UserManagement:
@@ -36,23 +37,27 @@ class UserManagement:
             cls._instance = cls.__new__(cls)
             # Put any initialization here.
             cls._db = common.database.Database().instance()
-            cls._user_id = 0
 
         return cls._instance
 
-    def create_user(self, username: str, meta: dict) -> None:
+    def create_user(self, username: str, meta: dict) -> bool:
+        if self._db.get_user_from_username(username):
+            return False
+
         salt = os.urandom(16)
         key = hashlib.pbkdf2_hmac("sha256", meta["password"].encode("utf-8"), salt, 100000)
 
-        user = common.database.User(self._user_id, username, key, salt)
-        self._db.insert_user(user)
+        user = common.user.User().from_values(username, key, salt)
+        self._db.create_user(user)
 
-        self._user_id += 1
+        return True
 
-    def is_user_password_correct(self, username: str, password: str) -> bool:
+    def get_user_from_username(self, username: str) -> common.user.User:
+        return self._db.get_user_from_username(username)
+
+    @staticmethod
+    def is_user_valid(user: common.user.User, password: str) -> bool:
         success = False
-
-        user = self._db.select_user_from_user_name(username)
 
         if user and werkzeug.security.safe_str_cmp(
                 hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), user.salt, 100000),

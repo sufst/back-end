@@ -19,6 +19,7 @@ import flask_restful
 import json
 import flask
 import common.user_management
+import common.user
 import flask_jwt_extended
 
 
@@ -44,7 +45,10 @@ class Users(flask_restful.Resource):
         """
         meta = json.loads(flask.request.data)
 
-        self._user_management.create_user(username, meta)
+        if self._user_management.create_user(username, meta):
+            return meta
+        else:
+            return meta, 409
 
-        return meta
+
 
