@@ -35,9 +35,9 @@ class Users(flask_restful.Resource):
         """
         get
         """
-        user = flask_jwt_extended.get_jwt_identity()
+        user = self._user_management.get_user_from_user_id(flask_jwt_extended.get_jwt_identity())
 
-        return {"username": user, "beans": True}
+        return {"username": user.username, "beans": True}
 
     def post(self, username):
         """

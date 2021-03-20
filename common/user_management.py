@@ -52,6 +52,9 @@ class UserManagement:
 
         return True
 
+    def get_user_from_user_id(self, user_id: str) -> common.user.User:
+        return self._db.get_user_from_user_id(user_id)
+
     def get_user_from_username(self, username: str) -> common.user.User:
         return self._db.get_user_from_username(username)
 

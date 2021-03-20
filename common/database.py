@@ -17,6 +17,7 @@
 """
 import flask_pymongo
 import common.user
+import bson
 
 
 class Database:
@@ -37,6 +38,12 @@ class Database:
 
     def get_user_from_username(self, username: str) -> common.user.User or None:
         user = common.user.User().from_record(self._mongo.db.user_accounts.find_one({"username": username}))
+
+        return user
+
+    def get_user_from_user_id(self, user_id: str) -> common.user.User or None:
+        user = common.user.User().from_record(self._mongo.db.user_accounts.find_one(
+            {"_id": bson.objectid.ObjectId(user_id)}))
 
         return user
 
