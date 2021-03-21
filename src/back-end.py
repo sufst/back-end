@@ -28,6 +28,7 @@ import os
 import flask_socketio
 import flask_pymongo
 import namespaces.frontend
+import namespaces.emulation
 import flask_login
 
 app = flask.Flask(__name__)
@@ -51,6 +52,7 @@ api.add_resource(resources.users.Users, "/users/<string:username>")
 api.add_resource(resources.login.Login, "/login")
 
 socketIO.on_namespace(namespaces.frontend.FrontEnd("/frontend"))
+socketIO.on_namespace(namespaces.emulation.Emulation("/emulation"))
 
 socketIO.run(app, host="0.0.0.0", port=5000, certfile='domain.crt', keyfile='domain.key')
 

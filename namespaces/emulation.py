@@ -22,11 +22,26 @@ import flask
 import common.utils
 
 
-class FrontEnd(flask_socketio.Namespace):
+class Emulation(flask_socketio.Namespace):
     def __init__(self, namespace):
         super().__init__(namespace)
 
         self._clients = {}
+        self._emulation_data = []
+        self._emulation_counter = 0
+
+        @common.utils.set_interval(1)
+        def spawner():
+            self._spawn_next_emulation_data()
+
+        self._emulation_spawner = spawner()
+
+    def _spawn_next_emulation_data(self):
+        rpm = self._emulation_counter
+        self._emulation_data.append([{"rpm": rpm}])
+        print(f"spawned {self._emulation_data[-1]}")
+
+        self._emulation_counter += 1
 
     @common.utils.authenticated_only
     def on_connect(self):
@@ -48,8 +63,8 @@ class FrontEnd(flask_socketio.Namespace):
 
             @common.utils.set_interval(config["interval"])
             def interval_emit():
-                print(f"emit {json.dumps({'rpm': 2})} to {sid}")
-                self.emit("data", data=json.dumps({"rpm": 2}), room=sid)
+                print(f"emit {json.dumps(self._emulation_data[-1])} to {sid}")
+                self.emit("data", data=json.dumps(self._emulation_data[-1]), room=sid)
 
             self._clients[flask_login.current_user.username] = interval_emit()
 
