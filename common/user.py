@@ -24,9 +24,21 @@ class User(flask_login.UserMixin):
         self.username = None
         self.key = None
         self.salt = None
+        self.authenticated = False
+        self.active = False
+        self.anonymous = False
 
-    def get_id(self):
-        return self.id
+    @property
+    def is_active(self):
+        return self.active
+
+    @property
+    def is_authenticated(self):
+        return self.authenticated
+
+    @property
+    def is_anonymous(self):
+        return self.anonymous
 
     def from_record(self, record: dict):
         if record is None:

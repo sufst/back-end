@@ -36,11 +36,12 @@ class Login(flask_restful.Resource):
             return {"msg": "Bad username or password"}, 401
 
         access_token = flask_jwt_extended.create_access_token(identity=user.id)
-
-        if flask_login.login_user(user, force=True):
-            print(f"logged in {user.get_id()}")
-
         self._userManagement.put_access_token_to_user(user, access_token)
+
+        user.authenticated = True
+        user.active = True
+        if flask_login.login_user(user):
+            print(f"logged in {user.username}")
 
         return flask.jsonify(access_token=access_token)
 
