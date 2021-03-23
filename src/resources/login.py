@@ -15,40 +15,34 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import flask_jwt_extended
 import flask_restful
-import json
 import flask
 import common.user_management
+import json
 import common.user
-import flask_jwt_extended
+import flask_login
+import common.logger
 
 
-class Users(flask_restful.Resource):
-    _user_management = common.user_management.UserManagement().instance()
+class Login(flask_restful.Resource):
+    _userManagement = common.user_management.get_user_management()
 
-    """
-    users
-    """
+    def post(self):
+        request = json.loads(flask.request.data)
 
-    @flask_jwt_extended.jwt_required()
-    def get(self, username):
-        """
-        get
-        """
-        user = self._user_management.get_user_from_user_id(flask_jwt_extended.get_jwt_identity())
+        user = self._userManagement.get_user_from_username(request["username"])
 
-        return {"username": user.username, "beans": True}
+        if not self._userManagement.is_user_valid(user, request["password"]):
+            return {"msg": "Bad username or password"}, 401
 
-    def post(self, username):
-        """
-        post
-        """
-        meta = json.loads(flask.request.data)
+        access_token = flask_jwt_extended.create_access_token(identity=user.id)
+        self._userManagement.put_access_token_to_user(user, access_token)
 
-        if self._user_management.create_user(username, meta):
-            return meta
-        else:
-            return meta, 409
+        user.authenticated = True
+        user.active = True
+        if flask_login.login_user(user):
+            print(f"logged in {user.username}")
 
-
+        return flask.jsonify(access_token=access_token)
 

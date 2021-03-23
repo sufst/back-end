@@ -24,7 +24,7 @@ class Database:
     _instance = None
 
     @classmethod
-    def instance(cls):
+    def get(cls):
         if cls._instance is None:
             cls._instance = cls.__new__(cls)
         return cls._instance
@@ -50,3 +50,6 @@ class Database:
 
         return user
 
+
+def get_database_manager():
+    return Database().get()

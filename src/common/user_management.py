@@ -32,11 +32,11 @@ class UserManagement:
     _instance = None
 
     @classmethod
-    def instance(cls):
+    def get(cls):
         if cls._instance is None:
             cls._instance = cls.__new__(cls)
-            # Put any initialization here.
-            cls._db = common.database.Database().instance()
+
+            cls._db = common.database.get_database_manager()
             cls._userTokens = {}
 
         return cls._instance
@@ -92,3 +92,7 @@ class UserManagement:
             success = True
 
         return success
+
+
+def get_user_management():
+    return UserManagement().get()
