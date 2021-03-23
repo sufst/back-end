@@ -32,11 +32,12 @@ class UserManagement:
     _instance = None
 
     @classmethod
-    def instance(cls):
+    def get(cls):
         if cls._instance is None:
             cls._instance = cls.__new__(cls)
-            # Put any initialization here.
-            cls._db = common.database.Database().instance()
+
+            cls._db = common.database.get_database_manager()
+            cls._userTokens = {}
 
         return cls._instance
 
@@ -58,6 +59,29 @@ class UserManagement:
     def get_user_from_username(self, username: str) -> common.user.User:
         return self._db.get_user_from_username(username)
 
+    def put_access_token_to_user(self, user: common.user.User, token: str) -> None:
+        self._userTokens[token] = user
+
+    def is_valid_access_token(self, access_token: str) -> bool:
+        if access_token in self._userTokens:
+            return True
+        else:
+            return False
+
+    def request_loader(self, request):
+        access_token = request.args.get("access_token")
+
+        if self.is_valid_access_token(access_token):
+            user = self.get_user_from_access_token(access_token)
+        else:
+            user = None
+
+        return user
+
+    def get_user_from_access_token(self, access_token: str) -> common.user.User:
+        if access_token in self._userTokens:
+            return self._userTokens[access_token]
+
     @staticmethod
     def is_user_valid(user: common.user.User, password: str) -> bool:
         success = False
@@ -68,3 +92,7 @@ class UserManagement:
             success = True
 
         return success
+
+
+def get_user_management():
+    return UserManagement().get()
