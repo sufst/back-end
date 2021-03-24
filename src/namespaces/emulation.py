@@ -22,6 +22,7 @@ import flask
 import common.utils
 import common.configuration
 import common.logger
+import time
 
 
 class EmulationModules:
@@ -73,7 +74,10 @@ class Emulation(flask_socketio.Namespace):
         data = {}
 
         for sensor, emulation in self._emulations.items():
-            data[sensor] = (lambda x, modules: eval(emulation))(self._x, self._emulation_modules)
+            data[sensor] = {
+                "value": (lambda x, modules: eval(emulation))(self._x, self._emulation_modules),
+                "epoch": round(time.time(), 3)
+            }
 
         self._x += 1
 
