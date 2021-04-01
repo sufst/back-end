@@ -34,7 +34,7 @@ import common.configuration
 
 
 config_manager = common.configuration.get_configuration_manager()
-config_manager.init_configuration("../config.xml")
+config_manager.init_configuration("config.xml")
 
 database_config = config_manager.configuration["database"]
 
