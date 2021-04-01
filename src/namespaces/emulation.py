@@ -95,7 +95,7 @@ class Emulation(flask_socketio.Namespace):
                 "sensors_config": self._sensors_config
             }
 
-            self.emit("data", data=json.dumps(connect_config), room=sid)
+            self.emit("config", data=json.dumps(connect_config), room=sid)
         else:
             raise ConnectionRefusedError("Unauthorized user")
 

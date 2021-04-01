@@ -5,8 +5,6 @@
         <config name="mode">cloud</config>
         <config name="ip">localhost</config>
         <config name="port">5000</config>
-        <config name="fullchain">../certs/fullchain.pem</config>
-        <config name="privkey">../certs/privkey.pem</config>
     </server>
     <database>
         <config name="verbose">INFO</config>
@@ -32,6 +30,8 @@
     <sensors>
         <!--The sensor names must match with the emulator and schema names-->
         <sensor name="rpm">
+            <config name="name">RPM</config>
+            <config name="units">RPM</config>
             <config name="enable">True</config>
             <config name="group">Core</config>
             <meta name="min">0</meta>
@@ -40,6 +40,8 @@
             <config name="emulation">int(5000 * modules.math.sin(modules.math.radians(x * 10)) + 5000)</config>
         </sensor>
         <sensor name="water_temp_c">
+            <config name="name">Water Temp</config>
+            <config name="units">C</config>
             <config name="enable">True</config>
             <config name="group">Core</config>
             <meta name="min">0</meta>
@@ -48,6 +50,8 @@
             <config name="emulation">modules.random.randint(80, 100)</config>
         </sensor>
         <sensor name="tps_perc">
+            <config name="name">TPS</config>
+            <config name="units">%</config>
             <config name="enable">True</config>
             <config name="group">Core</config>
             <meta name="min">0</meta>
@@ -56,6 +60,8 @@
             <config name="emulation">int(50*modules.math.sin(modules.math.radians(x*10))+50)</config>
         </sensor>
         <sensor name="battery_mv">
+            <config name="name">Battery Voltage</config>
+            <config name="units">mV</config>
             <config name="enable">True</config>
             <config name="group">Core</config>
             <meta name="min">6000</meta>
@@ -64,6 +70,8 @@
             <config name="emulation">modules.random.randint(11900, 12100)</config>
         </sensor>
         <sensor name="ext_5v_mv">
+            <config name="name">External 5V Rail</config>
+            <config name="units">mV</config>
             <config name="enable">True</config>
             <config name="group">Core</config>
             <meta name="min">3000</meta>
@@ -72,6 +80,8 @@
             <config name="emulation">modules.random.randint(4900, 5100)</config>
         </sensor>
         <sensor name="fuel_flow">
+            <config name="name">Fuel Flow</config>
+            <config name="units">l/s</config>
             <config name="enable">True</config>
             <config name="group">Core</config>
             <meta name="min">0</meta>
@@ -80,6 +90,8 @@
             <config name="emulation">int(25 * modules.math.sin(modules.math.radians(x * 10)) + 25)</config>
         </sensor>
         <sensor name="lambda">
+            <config name="name">Lambda</config>
+            <config name="units">lambda</config>
             <config name="enable">True</config>
             <config name="group">Core</config>
             <meta name="min">0</meta>
@@ -88,6 +100,8 @@
             <config name="emulation">int(25 * modules.math.sin(modules.math.radians(x * 10)) + 50)</config>
         </sensor>
         <sensor name="speed_kph">
+            <config name="name">Speed</config>
+            <config name="units">kph</config>
             <config name="enable">True</config>
             <config name="group">Core</config>
             <meta name="min">0</meta>
@@ -96,6 +110,8 @@
             <config name="emulation">int(150 * modules.math.sin(modules.math.radians(x * 10)) + 150)</config>
         </sensor>
         <sensor name="evo_scan_1">
+            <config name="name">EvoScanner-1</config>
+            <config name="units">Pa</config>
             <config name="enable">True</config>
             <config name="group">Aero</config>
             <meta name="min">0</meta>
@@ -104,6 +120,8 @@
             <config name="emulation">int(10 * modules.math.sin(modules.math.radians(x * 10)) + 10)</config>
         </sensor>
         <sensor name="evo_scan_2">
+            <config name="name">EvoScanner-2</config>
+            <config name="units">Pa</config>
             <config name="enable">True</config>
             <config name="group">Aero</config>
             <meta name="min">0</meta>
@@ -112,6 +130,8 @@
             <config name="emulation">int(15 * modules.math.sin(modules.math.radians(x * 10)) + 15)</config>
         </sensor>
         <sensor name="evo_scan_3">
+            <config name="name">EvoScanner-3</config>
+            <config name="units">Pa</config>
             <config name="enable">True</config>
             <config name="group">Aero</config>
             <meta name="min">0</meta>
@@ -120,6 +140,8 @@
             <config name="emulation">int(15 * modules.math.sin(modules.math.radians(x * 10)) + 20)</config>
         </sensor>
         <sensor name="evo_scan_4">
+            <config name="name">EvoScanner-4</config>
+            <config name="units">Pa</config>
             <config name="enable">True</config>
             <config name="group">Aero</config>
             <meta name="min">0</meta>
@@ -128,6 +150,8 @@
             <config name="emulation">int(15 * modules.math.sin(modules.math.radians(x * 10)) + 25)</config>
         </sensor>
         <sensor name="evo_scan_5">
+            <config name="name">EvoScanner-5</config>
+            <config name="units">Pa</config>
             <config name="enable">True</config>
             <config name="group">Aero</config>
             <meta name="min">0</meta>
@@ -136,6 +160,8 @@
             <config name="emulation">int(15 * modules.math.sin(modules.math.radians(x * 10)) + 30)</config>
         </sensor>
         <sensor name="evo_scan_6">
+            <config name="name">EvoScanner-6</config>
+            <config name="units">Pa</config>
             <config name="enable">True</config>
             <config name="group">Aero</config>
             <meta name="min">0</meta>
@@ -144,6 +170,8 @@
             <config name="emulation">int(15 * modules.math.sin(modules.math.radians(x * 10)) + 35)</config>
         </sensor>
         <sensor name="evo_scan_7">
+            <config name="name">EvoScanner-7</config>
+            <config name="units">Pa</config>
             <config name="enable">True</config>
             <config name="group">Aero</config>
             <meta name="min">0</meta>
@@ -152,6 +180,8 @@
             <config name="emulation">int(15 * modules.math.sin(modules.math.radians(x * 10)) + 40)</config>
         </sensor>
         <sensor name="status_ecu_connected">
+            <config name="name">ECU Status</config>
+            <config name="units">Code</config>
             <config name="enable">True</config>
             <config name="group">Diagnostic</config>
             <meta name="min">0</meta>
@@ -160,6 +190,8 @@
             <config name="emulation">int(1)</config>
         </sensor>
         <sensor name="status_engine">
+            <config name="name">Engine Status</config>
+            <config name="units">Code</config>
             <config name="enable">True</config>
             <config name="group">Diagnostic</config>
             <meta name="min">0</meta>
@@ -168,6 +200,8 @@
             <config name="emulation">int(1)</config>
         </sensor>
         <sensor name="status_battery">
+            <config name="name">Battery Status</config>
+            <config name="units">Code</config>
             <config name="enable">True</config>
             <config name="group">Diagnostic</config>
             <meta name="min">0</meta>
@@ -176,6 +210,8 @@
             <config name="emulation">int(2)</config>
         </sensor>
         <sensor name="status_logging">
+            <config name="name">Logging Status</config>
+            <config name="units">Code</config>
             <config name="enable">True</config>
             <config name="group">Diagnostic</config>
             <meta name="min">0</meta>
@@ -184,6 +220,8 @@
             <config name="emulation">int(1)</config>
         </sensor>
         <sensor name="inj_time">Power
+            <config name="name">Injection Time</config>
+            <config name="units">ms</config>
             <config name="enable">True</config>
             <config name="group">Power Train</config>
             <meta name="min">0</meta>
@@ -192,6 +230,8 @@
             <config name="emulation">modules.random.randint(6, 10)</config>
         </sensor>
         <sensor name="inj_duty_cycle">
+            <config name="name">Injection Duty Cycle</config>
+            <config name="units">ms</config>
             <config name="enable">True</config>
             <config name="group">Power Train</config>
             <meta name="min">50</meta>
@@ -200,6 +240,8 @@
             <config name="emulation">modules.random.randint(70, 80)</config>
         </sensor>
         <sensor name="lambda_pid_adj">
+            <config name="name">Lambda PID Adjust</config>
+            <config name="units">%</config>
             <config name="enable">True</config>
             <config name="group">Power Train</config>
             <meta name="min">0</meta>
@@ -208,6 +250,8 @@
             <config name="emulation">modules.random.randint(10, 20)</config>
         </sensor>
         <sensor name="lambda_pid_target">
+            <config name="name">Lambda PID Target</config>
+            <config name="units">%</config>
             <config name="enable">True</config>
             <config name="group">Power Train</config>
             <meta name="min">80</meta>
@@ -216,6 +260,8 @@
             <config name="emulation">modules.random.randint(95, 105)</config>
         </sensor>
         <sensor name="advance">
+            <config name="name">Advance</config>
+            <config name="units">advance</config>
             <config name="enable">True</config>
             <config name="group">Power Train</config>
             <meta name="min">0</meta>
@@ -224,6 +270,8 @@
             <config name="emulation">modules.random.randint(0, 5)</config>
         </sensor>
         <sensor name="ride_height_fl_cm">
+            <config name="name">Ride Height FL</config>
+            <config name="units">cm</config>
             <config name="enable">True</config>
             <config name="group">Suspension</config>
             <meta name="min">0</meta>
@@ -232,6 +280,8 @@
             <config name="emulation">int(5 * modules.math.cos(modules.math.radians(x * 15)) + 8)</config>
         </sensor>
         <sensor name="ride_height_fr_cm">
+            <config name="name">Ride Height FR</config>
+            <config name="units">cm</config>
             <config name="enable">True</config>
             <config name="group">Suspension</config>
             <meta name="min">0</meta>
@@ -240,6 +290,8 @@
             <config name="emulation">int(5 * modules.math.sin(modules.math.radians(x * 15)) + 8)</config>
         </sensor>
         <sensor name="ride_height_flw_cm">
+            <config name="name">Ride Height FLW</config>
+            <config name="units">cm</config>
             <config name="enable">True</config>
             <config name="group">Suspension</config>
             <meta name="min">0</meta>
@@ -248,6 +300,8 @@
             <config name="emulation">int(5 * modules.math.cos(modules.math.radians(x * 5)) + 8)</config>
         </sensor>
         <sensor name="ride_height_rear_cm">
+            <config name="name">Ride Height Rear</config>
+            <config name="units">cm</config>
             <config name="enable">True</config>
             <config name="group">Suspension</config>
             <meta name="min">0</meta>
@@ -256,6 +310,8 @@
             <config name="emulation">int(5 * modules.math.sin(modules.math.radians(x * 5)) + 8)</config>
         </sensor>
         <sensor name="lap_time_s">
+            <config name="name">Lap Time</config>
+            <config name="units">s</config>
             <config name="enable">True</config>
             <config name="group">Misc</config>
             <meta name="min">0</meta>
@@ -264,6 +320,8 @@
             <config name="emulation">int(x)</config>
         </sensor>
         <sensor name="accel_fl_x_mg">
+            <config name="name">Acceleration FL x</config>
+            <config name="units">mg</config>
             <config name="enable">True</config>
             <config name="group">Misc</config>
             <meta name="min">0</meta>
@@ -272,6 +330,8 @@
             <config name="emulation">int(500 * modules.math.sin(modules.math.radians(x * 10 + 1)) + 1000)</config>
         </sensor>
         <sensor name="accel_fl_y_mg">
+            <config name="name">Acceleration FL y</config>
+            <config name="units">mg</config>
             <config name="enable">True</config>
             <config name="group">Misc</config>
             <meta name="min">0</meta>
@@ -280,6 +340,8 @@
             <config name="emulation">int(500 * modules.math.sin(modules.math.radians(x * 10 + 0.5)) + 1000)</config>
         </sensor>
         <sensor name="accel_fl_z_mg">
+            <config name="name">Acceleration FL z</config>
+            <config name="units">mg</config>
             <config name="enable">True</config>
             <config name="group">Misc</config>
             <meta name="min">0</meta>
