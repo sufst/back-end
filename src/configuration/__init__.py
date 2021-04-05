@@ -23,8 +23,11 @@ __all__ = ["config"]
 class ConfigurationManager:
     master_config = {}
 
-    def init_config(self):
+    def start(self):
+        print("Starting configuration")
         self._init_config_database()
+        self._init_config_socket_io()
+        print("Started configuration")
 
     def _build_dict_from_elem(self, elem, type_conversions):
         parsed = {}
@@ -48,9 +51,22 @@ class ConfigurationManager:
 
         self.master_config["database"] = parsed
 
+    def _init_config_socket_io(self):
+        root = xml.etree.ElementTree.parse("socket_io.xml").getroot()
+
+        parsed = self._build_dict_from_elem(root, {
+            "data_emit_interval": lambda x: float(x)
+        })
+
+        self.master_config["socket.io"] = parsed
+
     @property
     def database(self):
         return self.master_config["database"]
+
+    @property
+    def socket_io(self):
+        return self.master_config["socket.io"]
 
 
 config = ConfigurationManager()

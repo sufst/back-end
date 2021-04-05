@@ -16,52 +16,100 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import flask_socketio
-import flask_login
+import flask_jwt_extended
 import json
-from users import usersManager
-from schedular import scheduler
+from scheduler import scheduler, IntervalTrigger
+from database import database, Document
+import flask
+from configuration import config
+
+__all__ = ["Emulation", "Car"]
 
 
-__all__ = ["Emulation"]
+emit_job = None
+datastore = {"meta": {}, "sensors": {}}
 
 
-class Emulation(flask_socketio.Namespace):
-    @usersManager.authenticated_only
+class Namespace(flask_socketio.Namespace):
+    @flask_jwt_extended.jwt_required()
     def on_connect(self):
-        print(f"{flask_login.current_user.username} -> /emulation connect")
-        # TODO: send sensor configuration
+        global emit_job
+        global datastore
 
-    @usersManager.authenticated_only
-    def on_config(self, data):
-        config = json.loads(data)
-        print(f"{flask_login.current_user.username} -> /emulation {config}")
+        user = flask_jwt_extended.current_user
 
-    @staticmethod
-    def on_disconnect():
-        if not flask_login.current_user.is_anonymous:
-            print(f"{flask_login.current_user.username} -> /emulation disconnect")
+        print(f"{user.login.username} -> {self.namespace}")
+
+        self.emit("meta", json.dumps(datastore["meta"]), room=flask.request.sid),
+
+    def _data_emitter(self):
+        global emit_job
+        global datastore
+
+        if datastore["sensors"] != {}:
+            try:
+                self.emit("data", json.dumps(datastore["sensors"]))
+            except Exception as error:
+                print(repr(error))
+                print("Stopping emit job")
+                emit_job.remove()
+                emit_job = None
+
+            datastore["sensors"] = {}
+
+    @flask_jwt_extended.jwt_required()
+    # We can use jwt_required here as socketio pushes the initial connect request context to the global flask
+    # request context (as WebSocket transactions do not have requests, so this spoofs that as if they do)
+    def on_meta(self, meta):
+        global emit_job
+        global datastore
+
+        meta = json.loads(meta)
+        user = flask_jwt_extended.current_user
+
+        print(f"{user.login.username} -> {meta}")
+        datastore["meta"] = meta
+        self.emit("meta", json.dumps(datastore["meta"]))
+
+        if emit_job is not None:
+            emit_job.remove()
+
+        print("Starting emit job")
+        emit_job = scheduler.add_job(
+            self._data_emitter, IntervalTrigger(seconds=config.socket_io["data_emit_interval"]))
+
+    @flask_jwt_extended.jwt_required()
+    # We can use jwt_required here as socketio pushes the initial connect request context to the global flask
+    # request context (as WebSocket transactions do not have requests, so this spoofs that as if they do)
+    def on_data(self, data):
+        global emit_job
+        global datastore
+
+        data = json.loads(data)
+        for sensor, data in data.items():
+            if sensor not in datastore["sensors"]:
+                datastore["sensors"][sensor] = []
+            datastore["sensors"][sensor].extend(data)
+
+    @flask_jwt_extended.jwt_required()
+    # We can use jwt_required here as socketio pushes the initial connect request context to the global flask
+    # request context (as WebSocket transactions do not have requests, so this spoofs that as if they do)
+    def on_disconnect(self):
+        user = flask_jwt_extended.current_user
+
+        print(f"{user.login.username} /-> {self.namespace}")
 
 
-# class Car(flask_socketio.Namespace):
-#     @users.authenticated_only
-#     def on_connect(self):
-#         if flask_login.current_user.is_authenticated:
-#             print(f"{flask_login.current_user.username} connected to {self.namespace}")
-#         else:
-#             raise ConnectionRefusedError("Unauthorized user")
-#
-#     @users.authenticated_only
-#     def on_message(self, data):
-#         print(f"message received {data} from {flask_login.current_user.username}")
-#
-#     @users.authenticated_only
-#     def on_config(self, data):
-#         config = json.loads(data)
-#         print(f"config received with {config} from {flask_login.current_user.username}")
-#         if config["emulation"]:
-#             sid = flask.request.sid
-#
-#     @staticmethod
-#     def on_disconnect():
-#         if not flask_login.current_user.is_anonymous:
-#             print(f"{flask_login.current_user.username} disconnected")
+Emulation = Namespace
+
+
+class Car(Namespace):
+    def on_data(self, data):
+        global datastore
+
+        data = json.loads(data)
+        for sensor, data in data.items():
+            if sensor not in datastore["sensors"]:
+                datastore["sensors"][sensor] = []
+            datastore["sensors"][sensor].append(data)
+            # TODO: Save car sensor data to database.

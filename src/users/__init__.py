@@ -17,25 +17,23 @@
 """
 import flask_login
 import hashlib
-from database import database
-from database import UserEntry
+from database import database, Document
 import os
 import werkzeug.security
-import functools
-import flask_socketio
 import flask_jwt_extended
+import flask
 
 __all__ = ["usersManager", "User"]
 
 
 class User(flask_login.UserMixin):
-    def __init__(self):
-        self.id = None
-        self.username = None
+    def __init__(self, login=None, meta=None):
+        self.login = login or None
+        self.meta = meta or None
+
         self.authenticated = False
         self.active = False
         self.anonymous = False
-        self.access_token = None
 
     @property
     def is_active(self):
@@ -60,76 +58,54 @@ class UserManager:
     user_tokens = {}
 
     @staticmethod
-    def create_user(username, password):
+    def create_user(username, password, meta):
+        print(f"Attempting user create -> {username}")
         try:
-            database.find_one_user("username", username)
+            database.find_one_user_login("username", username)
         except KeyError:
             salt = os.urandom(16)
             key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100000)
 
-            user_entry = UserEntry()
+            login_doc = Document({"username": username, "key": key, "salt": salt})
+            meta_doc = Document(meta)
 
-            user_entry.username = username
-            user_entry.key = key
-            user_entry.salt = salt
+            user = Document({"login": login_doc, "meta": meta_doc})
 
-            database.insert_new_user(user_entry)
+            database.insert_new_user(user)
+            print(f"User created {user}")
         else:
+            print("User already exists")
             raise KeyError()
 
-    def login_user(self, username, password):
+    @staticmethod
+    def auth_user(username, password):
+        print(f"Attempting auth user -> {username}")
         try:
-            user_entry = database.find_one_user("username", username)
+            user = User(login=database.find_one_user_login("username", username))
         except KeyError as error:
+            print("User does not exist")
             raise error
         else:
             if werkzeug.security.safe_str_cmp(
-                    hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), user_entry.salt, 100000),
-                    user_entry.key):
+                    hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), user.login.salt, 100000),
+                    user.login.key):
 
-                user = User()
-                user.id = user_entry.id
-                user.username = user_entry.username
+                token = flask_jwt_extended.create_access_token(identity=user.login.id)
 
-                token = flask_jwt_extended.create_access_token(identity=user.id)
-                self.user_tokens[token] = user
-
-                user.authenticated = True
-                user.active = True
-                if flask_login.login_user(user):
-                    print(f"{user.username} logged in")
-
+                print("Token issued")
                 return token
             else:
+                print("Password mismatch")
                 raise KeyError()
 
     @staticmethod
-    def get_user_meta(username):
+    def user_lookup_loader(_, payload):
+        user_id = payload["sub"]
         try:
-            user_entry = database.find_one_user("username", username)
-        except KeyError as error:
-            raise error
-        else:
-            return user_entry.meta
-
-    def request_loader(self, request):
-        access_token = request.args.get("access_token")
-
-        try:
-            return self.user_tokens[access_token]
+            return User(login=database.find_one_user_login("id", payload["sub"]))
         except KeyError:
+            print("User not found")
             return None
-
-    @staticmethod
-    def authenticated_only(func):
-        @functools.wraps(func)
-        def wrapped(*args, **kwargs):
-            if not flask_login.current_user.is_authenticated:
-                flask_socketio.disconnect()
-            else:
-                return func(*args, **kwargs)
-
-        return wrapped
 
 
 usersManager = UserManager()

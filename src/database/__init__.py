@@ -16,70 +16,54 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from bson import ObjectId
+from pymongo import MongoClient
+from configuration import config
+from time import time
 
-__all__ = ["database", "UserEntry"]
+__all__ = ["database", "Document"]
 
 
-class UserEntry:
-    def __init__(self):
-        self._id = None
-        self.username = None
-        self.key = None
-        self.salt = None
-        self.meta = {
-            "has_feet": True
-        }
+class Document:
+    def __init__(self, doc):
+        # The _id field from the database is a bson objectID so it needs to be converted to a string for usage.
+        if "_id" in doc:
+            doc["id"] = str(doc["_id"])
+            del doc["_id"]
+        self.__dict__ = doc
 
-    def get_id(self):
-        return self._id
+    def update(self, other):
+        self.__dict__.update(other.__dict__)
 
-    def set_id(self, value):
-        self._id = value
-
-    id = property(get_id, set_id)
-
-    def get_entry(self):
-        return {
-            "username": self.username,
-            "key": self.key,
-            "salt": self.salt,
-            "meta": self.meta
-        }
-
-    def set_entry(self, entry):
-        self.id = entry["_id"]
-        self.username = entry["username"]
-        self.key = entry["key"]
-        self.salt = entry["salt"]
-        self.meta = entry["meta"]
-
-    entry = property(get_entry, set_entry)
+    def __str__(self):
+        return str(self.__dict__)
 
 
 class DatabaseManager:
-    mongodb = None
+    users = None
 
-    def init_mongodb(self, mongo_db):
-        """
-        Initialise the database manager with the mongodb instance.
-        :param mongo_db: The mongodb instance.
-        """
-        self.mongodb = mongo_db
+    sensors = None
+    sessions = None
+
+    def start(self):
+        print("Starting database")
+        client = MongoClient(config.database["url"])
+        self.users = client.users
+        self.sensors = client.sensors
+        self.sessions = client.sessions
+        print("Started database")
 
     def insert_new_user(self, user):
         """
         Insert a new user into the database.
-        :param user: The new user to insert.
-        :return: The unique ID of the new user.
+        :param user: The new user to insert (Made up of a login Document and a meta Document)
         """
-        try:
-            self.find_one_user("username", user.username)
-        except KeyError:
-            return self.mongodb.db.user_accounts.insert_one(user.entry)
+        if not self.users.login.find_one("username", user.login.username):
+            self.users.login.insert_one(user.login.__dict__)
+            self.users.meta.insert_one(user.meta.__dict__)
         else:
             raise KeyError()
 
-    def find_one_user(self, key, value):
+    def find_one_user_login(self, key, value):
         """
         Find one user based on the key value pair e.g. username bob
         :param key: The key to find with.
@@ -90,14 +74,31 @@ class DatabaseManager:
             key = "_id"
             value = ObjectId(value)
 
-        entry = self.mongodb.db.user_accounts.find_one({key: value})
-        if entry is not None:
-            entry["_id"] = str(entry["_id"])
-            user = UserEntry()
-            user.entry = entry
+        doc = self.users.login.find_one({key: value})
+        if doc is not None:
+            user = Document(doc)
             return user
         else:
             raise KeyError()
+
+    def insert_new_sensor_meta(self, name, meta):
+        """
+        Insert a new document to the emulation sensor's meta collection.
+
+        """
+        meta.update(Document({"sensor": name, "epoch": time()}))
+        self.sensors["meta"].insert_one(meta.__dict__)
+
+    def insert_new_sensor_data(self, name, data):
+        """
+        Insert new documents to the sensor's collection.
+
+        """
+        insert = []
+        for entry in data:
+            insert.append(entry.__dict__)
+
+        self.sensors[name].insert_many(insert)
 
 
 database = DatabaseManager()

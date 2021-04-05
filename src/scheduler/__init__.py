@@ -15,13 +15,10 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.date import DateTrigger
 
-from app import app
-from app import sio
+__all__ = ["scheduler", "IntervalTrigger", "DateTrigger"]
 
-if __name__ == '__main__':
-    print(f"SUFST Intermediate-Server Copyright (C) 2021 Nathan Rowley-Smith\n" +
-          "This program comes with ABSOLUTELY NO WARRANTY;\n" +
-          "This is free software, and you are welcome to redistribute it")
-
-    sio.run(app, host="0.0.0.0", port=5000)
+scheduler = BackgroundScheduler()

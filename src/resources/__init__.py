@@ -21,38 +21,35 @@ import flask
 from users import usersManager
 import flask_jwt_extended
 
-__all__ = ["Login", "Users"]
+__all__ = ["Login", "User"]
 
 
 class Login(flask_restful.Resource):
     @staticmethod
     def post():
         request = json.loads(flask.request.data)
-
         try:
-            token = usersManager.login_user(request["username"], request["password"])
+            token = usersManager.auth_user(request["username"], request["password"])
         except KeyError:
             return {"msg": "Bad username or password"}, 401
         else:
             return flask.jsonify(access_token=token)
 
 
-class Users(flask_restful.Resource):
+class User(flask_restful.Resource):
     @staticmethod
     @flask_jwt_extended.jwt_required()
-    def get(username):
-        try:
-            meta = usersManager.get_user_meta(username)
-        except KeyError:
-            return {"msg": "Bad username"}, 401
-        else:
-            return meta
+    def get():
+        return flask_jwt_extended.current_user.meta
 
     @staticmethod
-    def post(username):
+    def post():
         data = json.loads(flask.request.data)
 
+        if "username" not in data or "password" not in data or "meta" not in data:
+            return data, 400
+
         try:
-            usersManager.create_user(username, data["password"])
+            usersManager.create_user(data["username"], data["password"], data["meta"])
         except KeyError:
             return data, 409
