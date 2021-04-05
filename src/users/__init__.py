@@ -90,7 +90,7 @@ class UserManager:
                     hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), user.login.salt, 100000),
                     user.login.key):
 
-                token = flask_jwt_extended.create_access_token(identity=user.login.id)
+                token = flask_jwt_extended.create_access_token(identity=user.login.id, expires_delta=False)
 
                 print("Token issued")
                 return token
