@@ -15,40 +15,10 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import flask_restful
-import json
-import flask
-import common.user_management
-import common.user
-import flask_jwt_extended
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.date import DateTrigger
 
+__all__ = ["scheduler", "IntervalTrigger", "DateTrigger"]
 
-class Users(flask_restful.Resource):
-    _user_management = common.user_management.get_user_management()
-
-    """
-    users
-    """
-
-    @flask_jwt_extended.jwt_required()
-    def get(self, username):
-        """
-        get
-        """
-        user = self._user_management.get_user_from_user_id(flask_jwt_extended.get_jwt_identity())
-
-        return {"username": user.username, "beans": True}
-
-    def post(self, username):
-        """
-        post
-        """
-        meta = json.loads(flask.request.data)
-
-        if self._user_management.create_user(username, meta):
-            return meta
-        else:
-            return meta, 409
-
-
-
+scheduler = BackgroundScheduler()

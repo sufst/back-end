@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<socket.io>
+    <!--The lowest accurate interval is ~0.5 on windows-->
+    <data_emit_interval>0.5</data_emit_interval>
+</socket.io>
