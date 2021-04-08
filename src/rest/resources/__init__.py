@@ -15,12 +15,8 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from rest.resources.login import Login
+from rest.resources.session import Session, SessionList
+from rest.resources.user import User
 
-from app import app
-
-if __name__ == '__main__':
-    print(f"SUFST Intermediate-Server Copyright (C) 2021 Nathan Rowley-Smith\n" +
-          "This program comes with ABSOLUTELY NO WARRANTY;\n" +
-          "This is free software, and you are welcome to redistribute it")
-
-    app.run()
+__all__ = ["Login", "Session", "SessionList", "User"]

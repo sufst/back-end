@@ -15,12 +15,20 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import flask_jwt_extended
+import json
+from socket_io.namespace import Namespace
 
-from app import app
 
-if __name__ == '__main__':
-    print(f"SUFST Intermediate-Server Copyright (C) 2021 Nathan Rowley-Smith\n" +
-          "This program comes with ABSOLUTELY NO WARRANTY;\n" +
-          "This is free software, and you are welcome to redistribute it")
+class Emulation(Namespace):
+    @flask_jwt_extended.jwt_required()
+    def on_meta(self, meta):
+        meta = json.loads(meta)
 
-    app.run()
+        self._handle_meta(meta)
+        self._schedule_data_emit()
+
+    @flask_jwt_extended.jwt_required()
+    def on_data(self, data):
+        data = json.loads(data)
+        self._handle_data(data)

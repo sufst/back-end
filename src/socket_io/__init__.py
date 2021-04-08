@@ -15,12 +15,23 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import flask_socketio
+from socket_io.namespaces import Emulation, Car
 
-from app import app
+__all__ = ["socket_io"]
 
-if __name__ == '__main__':
-    print(f"SUFST Intermediate-Server Copyright (C) 2021 Nathan Rowley-Smith\n" +
-          "This program comes with ABSOLUTELY NO WARRANTY;\n" +
-          "This is free software, and you are welcome to redistribute it")
 
-    app.run()
+class SocketIO:
+    sio = None
+
+    def init(self, app):
+        self.sio = flask_socketio.SocketIO(app, cors_allowed_origins="*", manage_session=False)
+        self.sio.init_app(app)
+        self.sio.on_namespace(Emulation("/emulation"))
+        self.sio.on_namespace(Car("/car"))
+
+    def run(self, *args, **kwargs):
+        self.sio.run(*args, **kwargs)
+
+
+socket_io = SocketIO()

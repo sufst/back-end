@@ -18,7 +18,6 @@
 from bson import ObjectId
 from pymongo import MongoClient
 from configuration import config
-from time import time
 
 __all__ = ["database", "Document"]
 
@@ -29,6 +28,7 @@ class Document:
         if "_id" in doc:
             doc["id"] = str(doc["_id"])
             del doc["_id"]
+
         self.__dict__ = doc
 
     def update(self, other):
@@ -40,11 +40,10 @@ class Document:
 
 class DatabaseManager:
     users = None
-
     sensors = None
     sessions = None
 
-    def start(self):
+    def start(self) -> None:
         print("Starting database")
         client = MongoClient(config.database["url"])
         self.users = client.users
@@ -52,16 +51,42 @@ class DatabaseManager:
         self.sessions = client.sessions
         print("Started database")
 
+    def find_one(self, collection, query):
+        entry = collection.find_one(query)
+        if entry is not None:
+            return self._get_document_from_entry(entry)
+        else:
+            return None
+
+    @staticmethod
+    def _get_entries_from_documents(documents):
+        return list(map(lambda x: x.__dict__, documents))
+
+    @staticmethod
+    def _get_entry_from_document(document):
+        return document.__dict__
+
+    @staticmethod
+    def _get_document_from_entry(entry):
+        return Document(entry)
+
+    @staticmethod
+    def _get_documents_from_entries(entries):
+        return list(map(lambda x: Document(x), entries))
+
     def insert_new_user(self, user):
         """
         Insert a new user into the database.
+        :rtype: Returns the user ID
         :param user: The new user to insert (Made up of a login Document and a meta Document)
         """
         if not self.users.login.find_one("username", user.login.username):
-            self.users.login.insert_one(user.login.__dict__)
-            self.users.meta.insert_one(user.meta.__dict__)
+            user_id = self.users.login.insert_one(self._get_entry_from_document(user.login))
+            self.users.meta.insert_one(self._get_entry_from_document(user.meta))
+
+            return user_id
         else:
-            raise KeyError()
+            raise KeyError(f"{user.login.username} already exists")
 
     def find_one_user_login(self, key, value):
         """
@@ -74,31 +99,98 @@ class DatabaseManager:
             key = "_id"
             value = ObjectId(value)
 
-        doc = self.users.login.find_one({key: value})
-        if doc is not None:
-            user = Document(doc)
-            return user
+        return self.find_one(self.users.login, {key: value})
+
+    def insert_sensor_collection(self, sensor):
+        """
+        Attempts to insert a sensor collection into the sensor database.
+        If the collection already exists then nothing happens.
+
+        :param sensor: The sensor document which contains .name and a .initial document to create the new collection
+                        with.
+        """
+        if sensor.name not in self.sensors.list_collection_names():
+            collection = self.sensors[sensor.name]
+            collection.insert_one(self._get_entry_from_document(sensor.initial))
+
+    def insert_to_sensor_many(self, sensor, docs):
+        """
+        Inserts sensor documents into the sensor collection.
+
+        :param sensor: The sensor name.
+        :param docs: The list of documents to insert.
+        :return The list of inserted IDs.
+        """
+        collection = self.sensors[sensor]
+        return list(map(lambda x: str(x), collection.insert_many(
+            self._get_entries_from_documents(docs)).inserted_ids))
+
+    def find_from_sensor_many(self, sensor, query):
+        """
+        Find all documents in a sensor collection based on the query.
+        :param sensor: The sensor name.
+        :param query: A query in the form of {<field>: [<value>,...]}
+        """
+        mongodb_query = {}
+        for field in query:
+            if query[field] == "id":
+                mongodb_query = {"_id", {"$in": list(map(lambda x: ObjectId(x), query[field]))}}
+            else:
+                mongodb_query = {field: {"$in": query[field]}}
+
+        return self._get_documents_from_entries(self.sensors[sensor].find(mongodb_query))
+
+    def find_sensor_meta(self, name, meta_id):
+        """
+        Find and return a sensor in the database.
+        :param meta_id: The ID of the meta insertion
+        :param name: The name of the sensor to find.
+        :return: The meta (or None)
+        """
+        return self.find_one(self.sensors[name], {"_id": ObjectId(meta_id)})
+
+    def find_from_sensor_many_from_ids(self, sensor, many):
+        """
+        Find all sensor data from a sensor based on the ID of the sensor data documents.
+
+        :param sensor: The name of the sensor.
+        :param many: List of IDs.
+        """
+        many = list(map(lambda x: ObjectId(x), many))
+        return self._get_documents_from_entries(self.sensors[sensor].query({"_id": {many}}))
+
+    def insert_session_collection(self, name, doc):
+        """
+        Insert a new session collection into the sessions database.
+        Raises an error if the session name already exists.
+
+        :param name: The sessions name.
+        :param doc: The creation document.
+        """
+        if name in self.sessions.list_collection_names():
+            raise IndexError(f"Session {name} already exists")
         else:
-            raise KeyError()
+            ses = self.sessions[name]
+            ses.insert_one(self._get_entry_from_document(doc))
 
-    def insert_new_sensor_meta(self, name, meta):
+    def insert_to_session_many(self, name, many):
         """
-        Insert a new document to the emulation sensor's meta collection.
+        Insert many documents into a session.
 
+        :param name: The name of the session.
+        :param many: The list of documents to insert.
         """
-        meta.update(Document({"sensor": name, "epoch": time()}))
-        self.sensors["meta"].insert_one(meta.__dict__)
+        ses = self.sessions[name]
+        ses.insert_many(self._get_entries_from_documents(many))
 
-    def insert_new_sensor_data(self, name, data):
+    def find_session_collection(self, name):
         """
-        Insert new documents to the sensor's collection.
+        Find and return a session (returns the session collection).
 
+        :param name: The session name
+        :return: The collection (or None)
         """
-        insert = []
-        for entry in data:
-            insert.append(entry.__dict__)
-
-        self.sensors[name].insert_many(insert)
+        return self.sessions[name]
 
 
 database = DatabaseManager()

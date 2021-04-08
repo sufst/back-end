@@ -21,9 +21,8 @@ from database import database, Document
 import os
 import werkzeug.security
 import flask_jwt_extended
-import flask
 
-__all__ = ["usersManager", "User"]
+__all__ = ["users", "User"]
 
 
 class User(flask_login.UserMixin):
@@ -72,10 +71,8 @@ class UserManager:
             user = Document({"login": login_doc, "meta": meta_doc})
 
             database.insert_new_user(user)
-            print(f"User created {user}")
         else:
-            print("User already exists")
-            raise KeyError()
+            raise KeyError("User already exists")
 
     @staticmethod
     def auth_user(username, password):
@@ -108,4 +105,4 @@ class UserManager:
             return None
 
 
-usersManager = UserManager()
+users = UserManager()
