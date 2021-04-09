@@ -18,6 +18,7 @@
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import jwt_required
 from sessions import sessions
+from flask import jsonify
 
 
 class SessionList(Resource):
@@ -51,7 +52,8 @@ class SessionList(Resource):
     @staticmethod
     @jwt_required()
     def get():
-        raise NotImplementedError()
+        ses = sessions.get_sessions_names()
+        return jsonify(ses)
 
 
 class Session(Resource):
@@ -79,3 +81,11 @@ class Session(Resource):
 
         for arg, value in args.items():
             arg_handlers[arg](value)
+
+    @staticmethod
+    def get(name):
+        try:
+            return sessions.get_session(name)
+        except KeyError as error:
+            print(error)
+            return name, 409

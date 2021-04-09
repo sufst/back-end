@@ -133,8 +133,8 @@ class DatabaseManager:
         """
         mongodb_query = {}
         for field in query:
-            if query[field] == "id":
-                mongodb_query = {"_id", {"$in": list(map(lambda x: ObjectId(x), query[field]))}}
+            if field == "id":
+                mongodb_query = {"_id": {"$in": list(map(lambda x: ObjectId(x), query[field]))}}
             else:
                 mongodb_query = {field: {"$in": query[field]}}
 
@@ -157,7 +157,7 @@ class DatabaseManager:
         :param many: List of IDs.
         """
         many = list(map(lambda x: ObjectId(x), many))
-        return self._get_documents_from_entries(self.sensors[sensor].query({"_id": {many}}))
+        return self._get_documents_from_entries(self.sensors[sensor].find({"_id": {"$in": many}}))
 
     def insert_session_collection(self, name, doc):
         """
@@ -183,14 +183,24 @@ class DatabaseManager:
         ses = self.sessions[name]
         ses.insert_many(self._get_entries_from_documents(many))
 
+    def find_all_session_collections(self):
+        """
+        Find all session collections and return their names.
+        """
+
+        return self.sessions.list_collection_names()
+
     def find_session_collection(self, name):
         """
-        Find and return a session (returns the session collection).
+        Find a session and return it's documents.
+        Raises KeyError if the session does not exist.
 
-        :param name: The session name
-        :return: The collection (or None)
+        :param name: The session name.
         """
-        return self.sessions[name]
+        if name in self.sessions.list_collection_names():
+            return self._get_documents_from_entries(self.sessions[name].find())
+        else:
+            raise KeyError(f"Session {name} does not exist")
 
 
 database = DatabaseManager()

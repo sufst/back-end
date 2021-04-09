@@ -48,7 +48,7 @@ class SensorsManager:
 
         for sensor, meta in metas.items():
             insert = deepcopy(meta)
-            insert.update({"creation": creation, "type": meta})
+            insert.update({"creation": creation, "type": "meta"})
             ids[sensor] = database.insert_to_sensor_many(sensor, [Document(insert)])[0]
 
         self.latest_meta_ids = ids

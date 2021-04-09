@@ -42,6 +42,52 @@ class SessionsManager:
             entry["active"] = False
             self.sessions[name] = entry
 
+    def get_sessions_names(self):
+        """
+        Get all active and stored sessions names.
+        """
+        return {
+            "active": list(self.sessions.keys()),
+            "stored": database.find_all_session_collections()
+        }
+
+    def get_session(self, name):
+        """
+        Get a session's data in dict form {<sensor>: [<data>, ...], ...}
+        Raises KeyError if the sensor is not collectable.
+
+        :param name:
+        """
+        if name not in self.sessions:
+            try:
+                documents = database.find_session_collection(name)
+
+                # Now the fun of mapping the sessions data entries to sensor data... :)
+                wanted_sensors = []
+                list(map(
+                    lambda x: wanted_sensors.append(x.sensor) if hasattr(x, "sensor") and
+                                                                 x.sensor not in wanted_sensors else False,
+                    documents))
+
+                data = {}
+                for sensor in wanted_sensors:
+                    wanted_data = database.find_from_sensor_many_from_ids(
+                        sensor,
+                        list(map(lambda x: x.mapping,
+                                 list(filter(lambda x: hasattr(x, "sensor") and x.sensor == sensor, documents))
+                                 ))
+                    )
+                    data[sensor] = {
+                        "meta": database.find_from_sensor_many(sensor, {"id": [wanted_data[0].meta_id]})[0].__dict__,
+                        "data": list(map(lambda x: {"value": x.value, "epoch": x.epoch}, wanted_data))
+                    }
+
+                return data
+            except KeyError as error:
+                raise error
+        else:
+            raise KeyError(f"Cannot get session {name} as active")
+
     def start_session(self, name):
         """
         Start a session.
@@ -70,6 +116,7 @@ class SessionsManager:
         The hook allows us to obtain the IDs of the inserted IDs (which is returned by insert_sensors_data)
         in a non-invasive way. The insert_sensors_data does not need to know what we do with the IDs.
         """
+
         def wrapper(func):
             @functools.wraps(func)
             def decorator(*args, **kwargs):
