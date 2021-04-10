@@ -25,10 +25,12 @@ class SocketIO:
     sio = None
 
     def init(self, app):
+        print("Starting socket.io")
         self.sio = flask_socketio.SocketIO(app, cors_allowed_origins="*", manage_session=False)
         self.sio.init_app(app)
         self.sio.on_namespace(Emulation("/emulation"))
         self.sio.on_namespace(Car("/car"))
+        print("Started socket.io")
 
     def run(self, *args, **kwargs):
         self.sio.run(*args, **kwargs)

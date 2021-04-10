@@ -25,11 +25,13 @@ class Rest:
     api = None
 
     def init(self, app):
+        print("Starting REST")
         self.api = Api(app)
         self.api.add_resource(User, "/user")
         self.api.add_resource(Login, "/login")
         self.api.add_resource(SessionList, "/session")
         self.api.add_resource(Session, "/session/<string:name>")
+        print("Started REST")
 
 
 rest = Rest()

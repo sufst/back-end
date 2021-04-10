@@ -17,7 +17,7 @@
 """
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import jwt_required
-from sessions import sessions
+from sessions import sessions, Session as SensorsSession
 from flask import jsonify
 
 
@@ -42,9 +42,9 @@ class SessionList(Resource):
         name = args["name"]
         sensors = args["sensors"]
 
-        print(f"Attempting creating new session {name} -> {sensors}")
+        print(f"Attempting session {name} POST {sensors}")
         try:
-            sessions.create_session(name, sensors)
+            sessions.create(SensorsSession(name, sensors))
         except Exception as error:
             print(error)
             return args, 409
@@ -52,8 +52,8 @@ class SessionList(Resource):
     @staticmethod
     @jwt_required()
     def get():
-        ses = sessions.get_sessions_names()
-        return jsonify(ses)
+        print(f"Attempting sessions GET")
+        return jsonify(sessions.list())
 
 
 class Session(Resource):
@@ -63,29 +63,41 @@ class Session(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument("start",
                             type=bool,
-                            help="Start the session with the ",
+                            help="Start the session",
                             required=False)
         parser.add_argument("end",
                             type=bool,
                             help="End the session",
                             required=False)
+        parser.add_argument("note",
+                            type=str,
+                            help="A note to save to the session",
+                            required=False)
 
         args = parser.parse_args(strict=True)
 
+        try:
+            sess = sessions.get(name)
+        except Exception as error:
+            print(error)
+            return name, 409
+
         arg_handlers = {
-            "start": lambda x: sessions.start_session(name) if x else None,
-            "end": lambda x: sessions.end_session(name) if x else None
+            "start": lambda x: sess.start() if x else None,
+            "end": lambda x: sess.end() if x else None
         }
 
-        print(f"Attempting {name} <- {args}")
+        print(f"Attempting session {name} PUT {args}")
 
         for arg, value in args.items():
-            arg_handlers[arg](value)
+            if value is not None:
+                arg_handlers[arg](value)
 
     @staticmethod
     def get(name):
+        print(f"Attempting session {name} GET")
         try:
-            return sessions.get_session(name)
+            return sessions.get(name).get()
         except KeyError as error:
             print(error)
             return name, 409

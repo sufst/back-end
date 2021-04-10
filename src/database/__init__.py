@@ -183,7 +183,7 @@ class DatabaseManager:
         ses = self.sessions[name]
         ses.insert_many(self._get_entries_from_documents(many))
 
-    def find_all_session_collections(self):
+    def list_all_session_collections(self):
         """
         Find all session collections and return their names.
         """

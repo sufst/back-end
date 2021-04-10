@@ -19,48 +19,19 @@ from database import database, Document
 import functools
 from time import time
 
-__all__ = ["sessions"]
+__all__ = ["sessions", "Session"]
 
 
-class SessionsManager:
-    sessions = {}
+class Session:
+    def __init__(self, name, sensors=None):
+        self.name = name
+        self.sensors = sensors
+        self.running = False
 
-    def create_session(self, name, sensors):
-        """
-        Create a new session and places it in the inactive session table.
-        Raises a KeyError if the session already exists.
-
-        :param name: The name of the session.
-        :param sensors: The list of sensors to capture.
-        """
-        entry = {"creation": time(), "sensors": sensors}
-        try:
-            database.insert_session_collection(name, Document(entry))
-        except KeyError as error:
-            raise error
-        else:
-            entry["active"] = False
-            self.sessions[name] = entry
-
-    def get_sessions_names(self):
-        """
-        Get all active and stored sessions names.
-        """
-        return {
-            "active": list(self.sessions.keys()),
-            "stored": database.find_all_session_collections()
-        }
-
-    def get_session(self, name):
-        """
-        Get a session's data in dict form {<sensor>: [<data>, ...], ...}
-        Raises KeyError if the sensor is not collectable.
-
-        :param name:
-        """
-        if name not in self.sessions:
+    def get(self):
+        if not self.running:
             try:
-                documents = database.find_session_collection(name)
+                documents = database.find_session_collection(self.name)
 
                 # Now the fun of mapping the sessions data entries to sensor data... :)
                 wanted_sensors = []
@@ -86,28 +57,71 @@ class SessionsManager:
             except KeyError as error:
                 raise error
         else:
-            raise KeyError(f"Cannot get session {name} as active")
+            raise KeyError(f"Cannot get session {self.name} as active")
 
-    def start_session(self, name):
-        """
-        Start a session.
+    def start(self):
+        self.running = True
 
-        :param name: The name of the session.
-        """
-        if name in self.sessions and self.sessions[name]["active"] is False:
-            self.sessions[name]["active"] = True
+    def end(self):
+        self.running = False
 
-    def end_session(self, name):
+    def insert_sensor_data_mappings(self, mappings):
+        if self.running:
+            creation = time()
+            wanted_ids = list(filter(lambda entry: entry[0] in self.sensors, mappings.items()))
+
+            insertions = []
+            for sensor, ids in wanted_ids:
+                insertions.extend(list(map(lambda x: Document(
+                    {"sensor": sensor, "creation": creation, "mapping": x}), ids)))
+
+            database.insert_to_session_many(self.name, insertions)
+
+
+class SessionsManager:
+    sessions = {}
+
+    def create(self, session):
         """
-        End a session.
+        Create a new session and places it in the inactive session table.
+        Raises a KeyError if the session already exists.
+
+        :param session: The session instance to create.
+        """
+        if session.name not in self.sessions:
+            entry = {"creation": time(), "sensors": session.sensors}
+            try:
+                database.insert_session_collection(session.name, Document(entry))
+            except KeyError as error:
+                raise error
+            else:
+                self.sessions[session.name] = session
+        else:
+            raise KeyError(f"Session {session.name} already exists")
+
+    def list(self):
+        """
+        Get all active and stored sessions names.
+        """
+        return {
+            "active": list(self.sessions.keys()),
+            "stored": database.list_all_session_collections()
+        }
+
+    def get(self, name):
+        """
+        Get a session instance.
         Raises KeyError if the session does not exist.
 
-        :param name: The session name.
-        """
+        :param name: Name of the session.
+        """      
         if name in self.sessions:
-            del self.sessions[name]
+            return self.sessions[name]
         else:
-            raise KeyError(f"Session {name} is not active")
+            if name in database.list_all_session_collections():
+                return Session(name)
+            else:
+                raise KeyError(f"Session {name} does not exist")
 
     def sensors_data_insertion_hook(self):
         """
@@ -116,25 +130,12 @@ class SessionsManager:
         The hook allows us to obtain the IDs of the inserted IDs (which is returned by insert_sensors_data)
         in a non-invasive way. The insert_sensors_data does not need to know what we do with the IDs.
         """
-
         def wrapper(func):
             @functools.wraps(func)
             def decorator(*args, **kwargs):
                 sensors_ids = func(*args, **kwargs)
-
-                creation = time()
-
-                for name in self.sessions:
-                    if self.sessions[name]["active"]:
-                        wanted_sensors = self.sessions[name]["sensors"]
-                        wanted_ids = list(filter(lambda entry: entry[0] in wanted_sensors, sensors_ids.items()))
-
-                        insertions = []
-                        for sensor, ids in wanted_ids:
-                            insertions.extend(list(map(lambda x: Document(
-                                {"sensor": sensor, "creation": creation, "mapping": x}), ids)))
-
-                        database.insert_to_session_many(name, insertions)
+                for name, session in self.sessions.items():
+                    session.insert_sensor_data_mappings(sensors_ids)
 
                 return sensors_ids
 
