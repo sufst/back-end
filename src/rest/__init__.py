@@ -15,12 +15,23 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from rest.resources import Login, User, Session, SessionList
+from flask_restful import Api
 
-from app import app
+__all__ = ["rest"]
 
-if __name__ == '__main__':
-    print(f"SUFST Intermediate-Server Copyright (C) 2021 Nathan Rowley-Smith\n" +
-          "This program comes with ABSOLUTELY NO WARRANTY;\n" +
-          "This is free software, and you are welcome to redistribute it")
 
-    app.run()
+class Rest:
+    api = None
+
+    def init(self, app):
+        print("Starting REST")
+        self.api = Api(app)
+        self.api.add_resource(User, "/user")
+        self.api.add_resource(Login, "/login")
+        self.api.add_resource(SessionList, "/session")
+        self.api.add_resource(Session, "/session/<string:name>")
+        print("Started REST")
+
+
+rest = Rest()

@@ -15,12 +15,23 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from flask_restful import Resource, reqparse
+from users import users
+from flask import jsonify
 
-from app import app
 
-if __name__ == '__main__':
-    print(f"SUFST Intermediate-Server Copyright (C) 2021 Nathan Rowley-Smith\n" +
-          "This program comes with ABSOLUTELY NO WARRANTY;\n" +
-          "This is free software, and you are welcome to redistribute it")
+class Login(Resource):
+    @staticmethod
+    def post():
+        parser = reqparse.RequestParser()
+        parser.add_argument("username", type=str, help="Username to login with", location="json")
+        parser.add_argument("password", type=str, help="Password to login with", location="json")
 
-    app.run()
+        args = parser.parse_args(strict=True)
+
+        try:
+            token = users.auth_user(args["username"], args["password"])
+        except KeyError:
+            return {"msg": "Bad username or password"}, 401
+        else:
+            return jsonify(access_token=token)

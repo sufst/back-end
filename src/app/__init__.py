@@ -15,43 +15,42 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from namespaces import Emulation, Car
 from configuration import config
-from resources import Login, User
 from database import database
-from users import usersManager
-import flask
-import flask_cors
-import flask_restful
+from users import users
+from flask_cors import CORS
+from flask import Flask
+from rest import rest
+from socket_io import socket_io
 import flask_jwt_extended
 import os
-import flask_socketio
 from scheduler import scheduler
 
-__all__ = ["app", "sio"]
-
-print("Starting app")
-config.start()
-scheduler.start()
-
-app = flask.Flask(__name__)
-flask_cors.CORS(app)
-app.config["JWT_SECRET_KEY"] = os.urandom(16)
-app.config["SECRET_KEY"] = os.urandom(16)
-
-sio = flask_socketio.SocketIO(app, cors_allowed_origins="*", manage_session=False)
-sio.init_app(app)
-sio.on_namespace(Emulation("/emulation"))
-sio.on_namespace(Car("/car"))
+__all__ = ["app"]
 
 
-jwt = flask_jwt_extended.JWTManager(app)
-jwt.user_lookup_loader(usersManager.user_lookup_loader)
+class App:
+    @staticmethod
+    def run():
+        print("Starting app")
+        config.start()
+        scheduler.start()
+
+        flask = Flask(__name__)
+        CORS(flask)
+        flask.config["JWT_SECRET_KEY"] = os.urandom(16)
+        flask.config["SECRET_KEY"] = os.urandom(16)
+
+        jwt = flask_jwt_extended.JWTManager(flask)
+        jwt.user_lookup_loader(users.user_lookup_loader)
+
+        rest.init(flask)
+        socket_io.init(flask)
+
+        database.start()
+        print("Started app")
+
+        socket_io.run(flask, host="0.0.0.0", port=5000)
 
 
-api = flask_restful.Api(app)
-api.add_resource(User, "/user")
-api.add_resource(Login, "/login")
-
-database.start()
-print("Started app")
+app = App()
