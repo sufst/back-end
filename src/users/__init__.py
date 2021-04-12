@@ -75,34 +75,43 @@ class UserManager:
             raise KeyError("User already exists")
 
     @staticmethod
-    def auth_user(username, password):
+    def _create_access_token(user_id):
+        token = flask_jwt_extended.create_access_token(identity=user_id, expires_delta=False)
+        print(f"Token created for {user_id}")
+        return token
+
+    def auth_user(self, username, password):
         print(f"Attempting auth user -> {username}")
-        try:
-            user = User(login=database.find_one_user_login("username", username))
-        except KeyError as error:
-            print("User does not exist")
-            raise error
+        if username == "anonymous":
+            return self._create_access_token(username)
         else:
-            if werkzeug.security.safe_str_cmp(
-                    hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), user.login.salt, 100000),
-                    user.login.key):
-
-                token = flask_jwt_extended.create_access_token(identity=user.login.id, expires_delta=False)
-
-                print("Token issued")
-                return token
+            try:
+                user = User(login=database.find_one_user_login("username", username))
+            except KeyError as error:
+                print("User does not exist")
+                raise error
             else:
-                print("Password mismatch")
-                raise KeyError()
+                if werkzeug.security.safe_str_cmp(
+                        hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), user.login.salt, 100000),
+                        user.login.key):
+                    return self._create_access_token(user.login.id)
+                else:
+                    print("Password mismatch")
+                    raise KeyError()
 
     @staticmethod
     def user_lookup_loader(_, payload):
         user_id = payload["sub"]
-        try:
-            return User(login=database.find_one_user_login("id", payload["sub"]))
-        except KeyError:
-            print("User not found")
-            return None
+        if user_id == "anonymous":
+            anon_user = User(login=Document({"username": "anonymous"}))
+            anon_user.anonymous = True
+            return anon_user
+        else:
+            try:
+                return User(login=database.find_one_user_login("id", payload["sub"]))
+            except KeyError:
+                print("User not found")
+                return None
 
 
 users = UserManager()
