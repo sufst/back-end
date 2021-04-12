@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from flask_restful import Resource, reqparse
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, current_user
 from sessions import sessions, Session as SensorsSession
 from flask import jsonify
 
@@ -25,29 +25,32 @@ class SessionList(Resource):
     @staticmethod
     @jwt_required()
     def post():
-        parser = reqparse.RequestParser()
-        parser.add_argument("name",
-                            type=str,
-                            help="The name of the session",
-                            required=True,
-                            location="json")
-        parser.add_argument("sensors",
-                            type=str,
-                            help="A list of sensors to capture on",
-                            required=True,
-                            location="json")
+        if not current_user.is_anonymous:
+            parser = reqparse.RequestParser()
+            parser.add_argument("name",
+                                type=str,
+                                help="The name of the session",
+                                required=True,
+                                location="json")
+            parser.add_argument("sensors",
+                                type=str,
+                                help="A list of sensors to capture on",
+                                required=True,
+                                location="json")
 
-        args = parser.parse_args(strict=True)
+            args = parser.parse_args(strict=True)
 
-        name = args["name"]
-        sensors = args["sensors"]
+            name = args["name"]
+            sensors = args["sensors"]
 
-        print(f"Attempting session {name} POST {sensors}")
-        try:
-            sessions.create(SensorsSession(name, sensors))
-        except Exception as error:
-            print(error)
-            return args, 409
+            print(f"Attempting session {name} POST {sensors}")
+            try:
+                sessions.create(SensorsSession(name, sensors))
+            except Exception as error:
+                print(error)
+                return args, 409
+        else:
+            return None, 401
 
     @staticmethod
     @jwt_required()
@@ -60,38 +63,41 @@ class Session(Resource):
     @staticmethod
     @jwt_required()
     def put(name):
-        parser = reqparse.RequestParser()
-        parser.add_argument("start",
-                            type=bool,
-                            help="Start the session",
-                            required=False)
-        parser.add_argument("end",
-                            type=bool,
-                            help="End the session",
-                            required=False)
-        parser.add_argument("note",
-                            type=str,
-                            help="A note to save to the session",
-                            required=False)
+        if not current_user.is_anonymous:
+            parser = reqparse.RequestParser()
+            parser.add_argument("start",
+                                type=bool,
+                                help="Start the session",
+                                required=False)
+            parser.add_argument("end",
+                                type=bool,
+                                help="End the session",
+                                required=False)
+            parser.add_argument("note",
+                                type=str,
+                                help="A note to save to the session",
+                                required=False)
 
-        args = parser.parse_args(strict=True)
+            args = parser.parse_args(strict=True)
 
-        try:
-            sess = sessions.get(name)
-        except Exception as error:
-            print(error)
-            return name, 409
+            try:
+                sess = sessions.get(name)
+            except Exception as error:
+                print(error)
+                return name, 409
 
-        arg_handlers = {
-            "start": lambda x: sess.start() if x else None,
-            "end": lambda x: sess.end() if x else None
-        }
+            arg_handlers = {
+                "start": lambda x: sess.start() if x else None,
+                "end": lambda x: sess.end() if x else None
+            }
 
-        print(f"Attempting session {name} PUT {args}")
+            print(f"Attempting session {name} PUT {args}")
 
-        for arg, value in args.items():
-            if value is not None:
-                arg_handlers[arg](value)
+            for arg, value in args.items():
+                if value is not None:
+                    arg_handlers[arg](value)
+        else:
+            return None, 401
 
     @staticmethod
     def get(name):
