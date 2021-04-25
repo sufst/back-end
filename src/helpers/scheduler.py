@@ -15,8 +15,14 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from rest.resources.login import Login
-from rest.resources.session import Session, SessionList
-from rest.resources.user import User
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.date import DateTrigger
 
-__all__ = ["Login", "Session", "SessionList", "User"]
+_scheduler = BackgroundScheduler()
+_scheduler.start()
+
+IntervalTrigger = IntervalTrigger
+DateTrigger = DateTrigger
+add_job = _scheduler.add_job
+schedule_job = _scheduler.scheduled_job

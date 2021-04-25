@@ -15,12 +15,20 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from plugins import sio
+import os
+import importlib
 
-from app import app
 
 if __name__ == '__main__':
     print(f"SUFST Intermediate-Server Copyright (C) 2021 Nathan Rowley-Smith\n" +
           "This program comes with ABSOLUTELY NO WARRANTY;\n" +
           "This is free software, and you are welcome to redistribute it")
 
-    app.run()
+    for f in os.listdir('./plugins'):
+        if f not in '__init__':
+            module = importlib.import_module(f'plugins.{f.split(".")[0]}')
+            if hasattr(module, 'load'):
+                module.load()
+
+    sio.run()

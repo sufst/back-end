@@ -1,5 +1,5 @@
 """
-    Southampton University Formula Student Team Back-End
+    Southampton University Formula Student Team Intermediate Server
     Copyright (C) 2021 Nathan Rowley-Smith
 
     This program is free software: you can redistribute it and/or modify
@@ -15,8 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from socket_io.namespaces.car import Car
-from socket_io.namespaces.emulation import Emulation
+import configparser
 
-
-__all__ = ["Car", "Emulation"]
+config = configparser.ConfigParser()
+config.read('config.ini')

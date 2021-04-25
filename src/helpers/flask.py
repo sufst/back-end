@@ -15,23 +15,20 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from flask_restful import Resource, reqparse
-from users import users
-from flask import jsonify
+import flask
+import flask_jwt_extended
+import flask_cors
+import os
 
+app = flask.Flask(__name__)
 
-class Login(Resource):
-    @staticmethod
-    def post():
-        parser = reqparse.RequestParser()
-        parser.add_argument("username", type=str, help="Username to login with", location="json")
-        parser.add_argument("password", type=str, help="Password to login with", location="json")
+flask_cors.CORS(app)
+app.config['JWT_SECRET_KEY'] = os.urandom(16)
+app.config['SECRET_KEY'] = os.urandom(16)
+jwt = flask_jwt_extended.JWTManager(app)
 
-        args = parser.parse_args(strict=True)
-
-        try:
-            token = users.auth_user(args["username"], args["password"])
-        except KeyError:
-            return {"msg": "Bad username or password"}, 401
-        else:
-            return jsonify(access_token=token)
+route = app.route
+request = flask.request
+current_user = flask_jwt_extended.current_user
+jwt_required = flask_jwt_extended.jwt_required
+create_access_token = flask_jwt_extended.create_access_token
