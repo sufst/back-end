@@ -15,14 +15,8 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import sqlite3
 from helpers import config
-
-_conf = config.config['database']
-_con = sqlite3.connect(_conf['Location'])
-_cur = _con.cursor()
-_s_con = sqlite3.connect(_conf['StageLocation'])
-_s_cur = _s_con.cursor()
+from sqlite3worker import Sqlite3Worker
 
 
 class Table:
@@ -30,27 +24,20 @@ class Table:
         'id integer PRIMARY KEY'
     ]
 
-    con = _con
-    cur = _cur
+    _cur = Sqlite3Worker(config.get_config('database')['Location'])
 
     def __init__(self):
         self.name = type(self).__name__.lower()
+
         sql = f"""CREATE TABLE IF NOT EXISTS {self.name} (
                 {''.join(map(lambda col: col + ', ', self.columns))[:-2]}
                 ) """
-        self.cur.execute(sql)
+        self.execute(sql)
 
-    def __enter__(self):
-        return self.cur
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type is not None:
-            print(exc_val)
-        else:
-            self.con.commit()
+    def execute(self, *args, **kwargs):
+        return self._cur.execute(*args, **kwargs)
 
 
 class StageTable(Table):
-    con = _s_con
-    cur = _s_cur
+    _cur = Sqlite3Worker(config.get_config('database')['StageLocation'])
 

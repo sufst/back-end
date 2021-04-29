@@ -16,8 +16,11 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import flask_socketio
-from helpers import db, flask, config
+from helpers import flask, config, db, scheduler
 from time import time
+import json
+from plugins import session
+import pickle
 
 sio = flask_socketio.SocketIO(cors_allowed_origins="*", manage_session=False)
 
@@ -26,27 +29,49 @@ class Meta(db.Table):
     columns = [
         'id INTEGER PRIMARY KEY AUTOINCREMENT',
         'creation REAL NOT NULL',
-        'meta TEXT NOT NULL'
+        'meta BLOB NOT NULL'
     ]
 
 
 class Stage(db.StageTable):
     columns = [
         'id INTEGER PRIMARY KEY AUTOINCREMENT',
-        'data BLOB NOT NULL'
+        'data TEXT NOT NULL'
     ]
 
 
-def load():
-    pass
-
-
 def run():
-    host = config.config['server']['Host']
-    port = config.config['server'].getint('Port')
+    host = config.get_config('server')['Host']
+    port = config.get_config('server').getint('Port')
     print(f'Serving on {host}:{port}')
 
     sio.run(flask.app, host=host, port=port)
+
+
+@scheduler.schedule_job(scheduler.IntervalTrigger(seconds=config.get_config('sio').getfloat('EmitInterval')))
+def _emit_job():
+    tab = Stage()
+
+    sql = f'SELECT id, data FROM {tab.name} ORDER BY id ASC'
+    results = tab.execute(sql)
+
+    if results:
+        eid = list(map(lambda result: result[0], results))
+
+        sensors = {}
+        for _, data in results:
+            data = pickle.loads(data)
+
+            for sensor, values in data.items():
+                if sensor not in sensors:
+                    sensors[sensor] = []
+
+                sensors[sensor].extend(values)
+
+        sio.emit('data', json.dumps(sensors), namespace='/car')
+
+        sql = f'DELETE FROM {tab.name} WHERE id IN ({",".join(list(map(lambda _: "?", eid)))})'
+        tab.execute(sql, tuple(eid))
 
 
 @sio.on('connect', '/car')
@@ -55,14 +80,16 @@ def on_connect():
     user = flask.current_user
     print(f"{user.username} connected to /car")
 
-    tab = Meta()
+    if not user.username == 'intermediate-server':
+        tab = Meta()
 
-    with tab as cur:
-        cur.execute(f'SELECT meta FROM {tab.name} ORDER BY id DESC LIMIT 1')
-        meta = cur.fetchone()
+        sql = f'SELECT meta FROM {tab.name} ORDER BY id DESC LIMIT 1'
+        results = tab.execute(sql)
 
-    if meta is not None:
-        sio.emit('meta', meta, room=flask.request.sid)
+        room = flask.request.sid
+        if results:
+            meta = results[0]
+            sio.emit('meta', meta, namespace='/car', room=room)
 
 
 @sio.on('disconnect', '/car')
@@ -80,8 +107,8 @@ def on_meta(meta):
     print(f"{user.username} meta {meta}")
     tab = Meta()
 
-    with tab as cur:
-        cur.execute(f'INSERT INTO {tab.name} (creation, meta) VALUES (?,?)', (time(), meta))
+    sql = f'INSERT INTO {tab.name} (creation, meta) VALUES (?,?)'
+    tab.execute(sql, (time(), meta))
 
 
 @sio.on('data', '/car')
@@ -89,8 +116,11 @@ def on_meta(meta):
 def on_data(data):
     tab = Stage()
 
-    with tab as cur:
-        cur.execute(f'INSERT INTO {tab.name} (data) VALUES (?)', (data,))
+    data = json.loads(data)
+    sql = f'INSERT INTO {tab.name} (data) VALUES (?)'
+    tab.execute(sql, (pickle.dumps(data),))
+
+    session.write_sensors(data)
 
 
 sio.init_app(flask.app)

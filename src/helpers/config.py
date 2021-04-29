@@ -17,5 +17,9 @@
 """
 import configparser
 
-config = configparser.ConfigParser()
-config.read('config.ini')
+_config = configparser.ConfigParser()
+_config.read('config.ini')
+
+
+def get_config(section):
+    return _config[section]

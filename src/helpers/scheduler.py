@@ -20,9 +20,10 @@ from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.date import DateTrigger
 
 _scheduler = BackgroundScheduler()
-_scheduler.start()
 
 IntervalTrigger = IntervalTrigger
 DateTrigger = DateTrigger
 add_job = _scheduler.add_job
 schedule_job = _scheduler.scheduled_job
+
+_scheduler.start()

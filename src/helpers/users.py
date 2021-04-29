@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import hashlib
-from helpers import db, flask
+from helpers import flask, db
 import os
 import werkzeug.security
 import json
@@ -47,19 +47,17 @@ def create_user(username, password, meta):
     print(f"Attempting user create {username}")
     tab = Users()
 
-    with tab as cur:
-        cur.execute(f'SELECT username FROM {tab.name} WHERE username = ?', (username,))
-        username = cur.fetchone()
+    sql = f'SELECT username FROM {tab.name} WHERE username = ?'
+    results = tab.execute(sql, (username,))
 
-    if username is None:
+    if results:
+        raise KeyError("User already exists")
+    else:
         salt = os.urandom(16)
         key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100000)
 
-        with tab as cur:
-            cur.execute(f'INSERT INTO {tab.name} (username, key, salt, meta) VALUES (?,?,?,?)',
-                        (username, key, salt, json.dumps(meta)))
-    else:
-        raise KeyError("User already exists")
+        sql = f'INSERT INTO {tab.name} (username, key, salt, meta) VALUES (?,?,?,?)'
+        tab.execute(sql, (username, key, salt, json.dumps(meta)))
 
 
 def auth_user(username, password):
@@ -68,13 +66,13 @@ def auth_user(username, password):
     else:
         tab = Users()
 
-        with tab as cur:
-            cur.execute(f'SELECT key, salt FROM {tab.name} WHERE username = ?', (username,))
-            key, salt = cur.fetchone()
+        sql = f'SELECT key, salt FROM {tab.name} WHERE username = ?'
+        results = tab.execute(sql, (username,))
 
-        if key is None:
+        if not results:
             raise KeyError("User does not exist")
         else:
+            key, salt = results[0]
             if werkzeug.security.safe_str_cmp(
                     hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100000),
                     key):
@@ -88,19 +86,23 @@ def _user_lookup_loader(_, payload):
 
     if username == "anonymous":
         user = User()
+        user.username = 'anonymous'
         user.anonymous = True
     else:
         tab = Users()
 
-        with tab as cur:
-            cur.execute(f'SELECT username, key, salt, meta FROM {tab.name} WHERE username =?', (username,))
-            username, key, salt, meta = cur.fetchone()
-
-        if username is None:
+        sql = f'SELECT username, key, salt, meta FROM {tab.name} WHERE username = ?'
+        results = tab.execute(sql, (username,))
+        if results:
+            _username, key, salt, meta = results[0]
+            if _username is None:
+                print("User not found")
+                user = User()
+            else:
+                user = User(username, key, salt, meta)
+        else:
             print("User not found")
             user = User()
-        else:
-            user = User(username, key, salt, meta)
 
     return user
 

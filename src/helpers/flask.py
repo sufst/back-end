@@ -32,3 +32,4 @@ request = flask.request
 current_user = flask_jwt_extended.current_user
 jwt_required = flask_jwt_extended.jwt_required
 create_access_token = flask_jwt_extended.create_access_token
+g = flask.g

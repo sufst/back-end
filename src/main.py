@@ -31,4 +31,10 @@ if __name__ == '__main__':
             if hasattr(module, 'load'):
                 module.load()
 
+    for f in os.listdir('./plugins'):
+        if f not in '__init__':
+            module = importlib.import_module(f'plugins.{f.split(".")[0]}')
+            if hasattr(module, 'run'):
+                module.run()
+
     sio.run()
