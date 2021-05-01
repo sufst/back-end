@@ -16,21 +16,22 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import hashlib
-from helpers import flask, db
+from src.helpers import privileges
+from src.plugins import webapi, db
 import os
 import werkzeug.security
 import json
+from time import time
 
 
 class User:
-    def __init__(self, username=None, key=None, salt=None, meta=None):
+    def __init__(self, username=None, key=None, salt=None, creation=None, privilege=None, meta=None):
         self.username = username
         self.key = key
         self.salt = salt
         self.meta = meta
-
-        self.authenticated = False
-        self.anonymous = False
+        self.creation = creation
+        self.privilege = privilege
 
 
 class Users(db.Table):
@@ -39,12 +40,25 @@ class Users(db.Table):
         'username TEXT NOT NULL',
         'key BLOB NOT NULL',
         'salt BLOB NOT NULL',
+        'creation REAL NOT NULL',
+        'privilege INTEGER NOT NULL',
         'meta TEXT NOT NULL'
     ]
 
 
-def create_user(username, password, meta):
-    print(f"Attempting user create {username}")
+def load():
+    try:
+        create_user('intermediate_server', 'sufst', 'Basic', {})
+        create_user('anonymous', 'anonymous', 'Anon', {})
+    except KeyError:
+        pass
+    except Exception as err:
+        print(err)
+
+    webapi.jwt.user_lookup_loader(_user_lookup_loader)
+
+
+def create_user(username, password, privilege, meta):
     tab = Users()
 
     sql = f'SELECT username FROM {tab.name} WHERE username = ?'
@@ -55,14 +69,15 @@ def create_user(username, password, meta):
     else:
         salt = os.urandom(16)
         key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100000)
+        creation = time()
 
-        sql = f'INSERT INTO {tab.name} (username, key, salt, meta) VALUES (?,?,?,?)'
-        tab.execute(sql, (username, key, salt, json.dumps(meta)))
+        sql = f'INSERT INTO {tab.name} (username, key, salt, creation, privilege, meta) VALUES (?,?,?,?,?,?)'
+        tab.execute(sql, (username, key, salt, creation, int(privileges.from_string(privilege)), json.dumps(meta)))
 
 
 def auth_user(username, password):
     if username == "anonymous":
-        return flask.create_access_token(identity=username, expires_delta=False)
+        return webapi.create_access_token(identity=username, expires_delta=False)
     else:
         tab = Users()
 
@@ -76,7 +91,7 @@ def auth_user(username, password):
             if werkzeug.security.safe_str_cmp(
                     hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100000),
                     key):
-                return flask.create_access_token(identity=username, expires_delta=False)
+                return webapi.create_access_token(identity=username, expires_delta=False)
             else:
                 raise Exception('Password mismatch')
 
@@ -85,26 +100,18 @@ def _user_lookup_loader(_, payload):
     username = payload["sub"]
 
     if username == "anonymous":
-        user = User()
-        user.username = 'anonymous'
-        user.anonymous = True
+        user = User(username='anonymous', privilege=privileges.anon)
     else:
         tab = Users()
 
-        sql = f'SELECT username, key, salt, meta FROM {tab.name} WHERE username = ?'
+        sql = f'SELECT username, key, salt, creation, privilege, meta FROM {tab.name} WHERE username = ?'
         results = tab.execute(sql, (username,))
         if results:
-            _username, key, salt, meta = results[0]
-            if _username is None:
-                print("User not found")
-                user = User()
-            else:
-                user = User(username, key, salt, meta)
+            name, key, salt, creation, privilege, meta = results[0]
+            privilege = privileges.from_level(privilege)
+
+            user = User(username, key, salt, creation, privilege, meta)
         else:
-            print("User not found")
-            user = User()
+            user = None
 
     return user
-
-
-flask.jwt.user_lookup_loader(_user_lookup_loader)

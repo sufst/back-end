@@ -18,10 +18,11 @@
 
 import csv
 import os
-from helpers import db
+from src.plugins import db
 from time import time
 import json
-import pickle
+import zipfile
+from src.helpers import config
 
 
 class Sessions(db.Table):
@@ -36,14 +37,15 @@ class Sessions(db.Table):
     ]
 
 
-def load():
-    if not os.path.exists('sessions/'):
-        os.mkdir('sessions/')
+_location = ''
 
-    try:
-        new_session('test', ['rpm'], json.dumps({'awesome': True}))
-    except Exception as e:
-        print(e)
+
+def load():
+    global _location
+    _location = config.get_config('sessions')['Location']
+
+    if not os.path.exists(f'{_location}/'):
+        os.mkdir(f'{_location}')
 
 
 def new_session(name, sensors, meta):
@@ -55,14 +57,14 @@ def new_session(name, sensors, meta):
     if results:
         raise KeyError('Session already exists')
     else:
-        if not os.path.exists(f'sessions/{name}/'):
-            os.mkdir(f'sessions/{name}/')
+        if not os.path.exists(f'{_location}/{name}/'):
+            os.mkdir(f'{_location}/{name}/')
 
-        sql = f'INSERT INTO {tab.name} (name, creation, status, sensors, meta) VALUES (?,?,?,?,?)'
-        tab.execute(sql, (name, time(), 'alive', json.dumps(sensors), meta))
+        sql = f'INSERT INTO {tab.name} (name, creation, status, sensors, notes, meta) VALUES (?,?,?,?,?,?)'
+        tab.execute(sql, (name, time(), 'alive', json.dumps(sensors), json.dumps({}), json.dumps(meta)))
 
         for sensor in sensors:
-            with open(f'sessions/{name}/{sensor}.csv', 'w', newline='') as f:
+            with open(f'{_location}/{name}/{sensor}.csv', 'w', newline='') as f:
                 fieldnames = ['epoch', 'value']
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
                 writer.writeheader()
@@ -86,14 +88,39 @@ def write_sensors(data):
             for s in wanted:
                 rows = list(map(lambda entry: {'epoch': entry['epoch'], 'value': entry['value']}, data[s]))
 
-                with open(f'sessions/{session}/{s}.csv', 'a', newline='') as f:
+                with open(f'{_location}/{session}/{s}.csv', 'a', newline='') as f:
                     fieldnames = ['epoch', 'value']
                     writer = csv.DictWriter(f, fieldnames=fieldnames)
                     writer.writerows(rows)
 
 
+def _zip_session(name):
+    if os.path.exists(f'{_location}/{name}'):
+        try:
+            f_zip = zipfile.ZipFile(f'{_location}/{name}/{name}.zip', 'x')
+        except FileExistsError:
+            print(f'{name}.zip already exists')
+        else:
+            for entry in os.listdir(f'{_location}/{name}'):
+                f_name, f_ext = entry.split('.')
+                if f_ext == 'csv':
+                    f_zip.write(f'{_location}/{name}/{f_name}.csv', f'{f_name}.csv')
+
+            f_zip.close()
+
+
+def get_zip_file(name):
+    if os.path.exists(f'{_location}/{name}'):
+        if not os.path.exists(f'{_location}/{name}/{name}.zip'):
+            _zip_session(name)
+
+        return f'{_location}/{name}/{name}.zip'
+    else:
+        raise FileExistsError(f'{name} does not exist')
+
+
 def end_session(name):
     tab = Sessions()
 
-    sql = f'UPDATE {tab.name} SET status = dead WHERE name = ?'
-    tab.execute(sql, (name, ))
+    sql = f'UPDATE {tab.name} SET status = ? WHERE name = ?'
+    tab.execute(sql, ('dead', name, ))

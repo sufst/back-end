@@ -15,9 +15,32 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from plugins import sio
+from src.plugins import sio
+from src.helpers import config
 import os
 import importlib
+
+
+def run(conf):
+    config.set_config(conf)
+
+    for f in os.listdir('./src/plugins'):
+        if f not in '__init__':
+            module = importlib.import_module(f'src.plugins.{f.split(".")[0]}')
+            if hasattr(module, 'load'):
+                module.load()
+
+    for f in os.listdir('./src/plugins'):
+        if f not in '__init__':
+            module = importlib.import_module(f'src.plugins.{f.split(".")[0]}')
+            if hasattr(module, 'run'):
+                module.run()
+
+    sio.run()
+
+
+def stop():
+    sio.stop()
 
 
 if __name__ == '__main__':
@@ -25,16 +48,4 @@ if __name__ == '__main__':
           "This program comes with ABSOLUTELY NO WARRANTY;\n" +
           "This is free software, and you are welcome to redistribute it")
 
-    for f in os.listdir('./plugins'):
-        if f not in '__init__':
-            module = importlib.import_module(f'plugins.{f.split(".")[0]}')
-            if hasattr(module, 'load'):
-                module.load()
-
-    for f in os.listdir('./plugins'):
-        if f not in '__init__':
-            module = importlib.import_module(f'plugins.{f.split(".")[0]}')
-            if hasattr(module, 'run'):
-                module.run()
-
-    sio.run()
+    run('src/config.ini')

@@ -15,21 +15,26 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import flask
-import flask_jwt_extended
-import flask_cors
-import os
+from src.plugins import users, webapi
+import json
 
-app = flask.Flask(__name__)
 
-flask_cors.CORS(app)
-app.config['JWT_SECRET_KEY'] = os.urandom(16)
-app.config['SECRET_KEY'] = os.urandom(16)
-jwt = flask_jwt_extended.JWTManager(app)
+def _on_login_post():
+    data = webapi.request.get_json()
 
-route = app.route
-request = flask.request
-current_user = flask_jwt_extended.current_user
-jwt_required = flask_jwt_extended.jwt_required
-create_access_token = flask_jwt_extended.create_access_token
-g = flask.g
+    username = data['username']
+    password = data['password']
+
+    try:
+        token = users.auth_user(username, password)
+    except KeyError:
+        return {"msg": "Bad username or password"}, 401
+    else:
+        return json.dumps({'access_token': token})
+
+
+@webapi.endpoint('/login', methods=['POST'])
+def login():
+    return webapi.route({
+        'POST': lambda: _on_login_post()
+    })

@@ -16,10 +16,10 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import flask_socketio
-from helpers import flask, config, db, scheduler
+from src.helpers import config, privileges
 from time import time
 import json
-from plugins import session
+from src.plugins import session, scheduler, webapi, db
 import pickle
 
 sio = flask_socketio.SocketIO(cors_allowed_origins="*", manage_session=False)
@@ -43,12 +43,20 @@ class Stage(db.StageTable):
 def run():
     host = config.get_config('server')['Host']
     port = config.get_config('server').getint('Port')
-    print(f'Serving on {host}:{port}')
 
-    sio.run(flask.app, host=host, port=port)
+    sio.run(webapi.app, host=host, port=port)
 
 
-@scheduler.schedule_job(scheduler.IntervalTrigger(seconds=config.get_config('sio').getfloat('EmitInterval')))
+def stop():
+    sio.stop()
+
+
+def load():
+    sio.init_app(webapi.app)
+
+    scheduler.add_job(_emit_job, scheduler.IntervalTrigger(seconds=config.get_config('sio').getfloat('EmitInterval')))
+
+
 def _emit_job():
     tab = Stage()
 
@@ -75,36 +83,28 @@ def _emit_job():
 
 
 @sio.on('connect', '/car')
-@flask.jwt_required()
+@privileges.privilege_required(privileges.anon)
 def on_connect():
-    user = flask.current_user
-    print(f"{user.username} connected to /car")
+    tab = Meta()
 
-    if not user.username == 'intermediate-server':
-        tab = Meta()
+    sql = f'SELECT meta FROM {tab.name} ORDER BY id DESC LIMIT 1'
+    results = tab.execute(sql)
 
-        sql = f'SELECT meta FROM {tab.name} ORDER BY id DESC LIMIT 1'
-        results = tab.execute(sql)
-
-        room = flask.request.sid
-        if results:
-            meta = results[0]
-            sio.emit('meta', meta, namespace='/car', room=room)
+    room = webapi.request.sid
+    if results:
+        meta = results[0]
+        sio.emit('meta', meta, namespace='/car', room=room)
 
 
 @sio.on('disconnect', '/car')
-@flask.jwt_required()
+@privileges.privilege_required(privileges.anon)
 def on_disconnect():
-    user = flask.current_user
-    print(f"{user.username} disconnected from /car")
+    user = webapi.current_user
 
 
 @sio.on('meta', '/car')
-@flask.jwt_required()
+@privileges.privilege_required(privileges.anon)
 def on_meta(meta):
-    user = flask.current_user
-
-    print(f"{user.username} meta {meta}")
     tab = Meta()
 
     sql = f'INSERT INTO {tab.name} (creation, meta) VALUES (?,?)'
@@ -112,7 +112,7 @@ def on_meta(meta):
 
 
 @sio.on('data', '/car')
-@flask.jwt_required()
+@privileges.privilege_required(privileges.anon)
 def on_data(data):
     tab = Stage()
 
@@ -121,6 +121,3 @@ def on_data(data):
     tab.execute(sql, (pickle.dumps(data),))
 
     session.write_sensors(data)
-
-
-sio.init_app(flask.app)

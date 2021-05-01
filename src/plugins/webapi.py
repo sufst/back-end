@@ -15,51 +15,38 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from helpers import flask, users
-import json
+import flask
+import flask_jwt_extended
+import flask_cors
+import os
+import importlib
 
 
-@flask.route('/login', methods=['POST'])
-def login():
-    if flask.request.method == 'POST':
-        data = flask.request.get_json()
+app = flask.Flask(__name__)
 
-        try:
-            token = users.auth_user(data['username'], data['password'])
-        except KeyError:
-            return {"msg": "Bad username or password"}, 401
-        else:
-            return json.dumps({'access_token': token})
-    else:
-        return None, 404
+flask_cors.CORS(app)
+app.config['JWT_SECRET_KEY'] = os.urandom(16)
+app.config['SECRET_KEY'] = os.urandom(16)
+jwt = flask_jwt_extended.JWTManager(app)
 
-
-@flask.jwt_required()
-@flask.route('/user', methods=['GET', 'POST'])
-def user():
-    if flask.request.method == 'GET':
-        return flask.current_user['meta']
-    elif flask.request.method == 'POST':
-        data = flask.request.get_json()
-
-        meta = {
-            "likes_beans": data["likes_beans"] or None
-        }
-
-        try:
-            print(f"Attempting user create {data['username']} -> {meta}")
-            users.create_user(data["username"], data["password"], meta)
-        except KeyError as error:
-            print(error)
-            return str(error), 409
-    else:
-        return None, 404
+endpoint = app.route
+request = flask.request
+current_user = flask_jwt_extended.current_user
+jwt_required = flask_jwt_extended.jwt_required
+create_access_token = flask_jwt_extended.create_access_token
+Response = flask.Response
 
 
 def load():
-    try:
-        users.create_user('intermediate_server', 'sufst', {'likes_beans': True})
-    except KeyError:
-        pass
-    except Exception as err:
-        print(err)
+    for f in os.listdir('./src/webapi'):
+        if f not in '__init__':
+            importlib.import_module(f'src.webapi.{f.split(".")[0]}')
+
+
+def route(handlers, *args, **kwargs):
+    method = flask.request.method
+
+    if method in handlers:
+        return handlers[method](*args, **kwargs)
+    else:
+        return None, 404

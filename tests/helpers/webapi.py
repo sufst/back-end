@@ -15,15 +15,24 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.interval import IntervalTrigger
-from apscheduler.triggers.date import DateTrigger
+from urllib import request
+from tests.helpers import config
+import json
 
-_scheduler = BackgroundScheduler()
 
-IntervalTrigger = IntervalTrigger
-DateTrigger = DateTrigger
-add_job = _scheduler.add_job
-schedule_job = _scheduler.scheduled_job
+def build_request(end_point, method, data=None, token=None, content_type=None):
+    host = 'localhost'
+    port = config.get_config('server')["Port"]
 
-_scheduler.start()
+    url = f'http://{host}:{port}/{end_point}'
+
+    if data:
+        data = json.dumps(data).encode('utf-8')
+
+    headers = {}
+    if token:
+        headers['Authorization'] = 'Bearer ' + token
+    if content_type:
+        headers['Content-Type'] = content_type
+
+    return request.Request(url, data=data, headers=headers, method=method)

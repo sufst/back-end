@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from helpers import config
+from tests.helpers import config
 from sqlite3worker import Sqlite3Worker
 
 
@@ -24,7 +24,7 @@ class Table:
         'id integer PRIMARY KEY'
     ]
 
-    _cur = Sqlite3Worker(config.get_config('database')['Location'])
+    _cur = None
 
     def __init__(self):
         self.name = type(self).__name__.lower()
@@ -37,7 +37,15 @@ class Table:
     def execute(self, *args, **kwargs):
         return self._cur.execute(*args, **kwargs)
 
+    @classmethod
+    def set_cursor(cls, cur):
+        cls._cur = cur
+
 
 class StageTable(Table):
-    _cur = Sqlite3Worker(config.get_config('database')['StageLocation'])
+    pass
 
+
+def load():
+    Table.set_cursor(Sqlite3Worker(config.get_config('database')['Location']))
+    StageTable.set_cursor(Sqlite3Worker(config.get_config('database')['StageLocation']))
