@@ -16,10 +16,12 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from urllib import request, error
-from tests.helpers.unittests import BaseAccountTests, unittest
+from tests.helpers.unittests import BaseAccountTests, unittest, BaseAccountSocketIoTest
 from tests.helpers import users, webapi
 import zipfile
 import io
+import threading
+import json
 
 
 class TestBasicAccount(BaseAccountTests):
@@ -128,6 +130,73 @@ class TestBasicAccount(BaseAccountTests):
             pass
 
 
+class TestBasicAccountSocketIO(BaseAccountSocketIoTest):
+    def setUp(self):
+        self.username = 'anonymous'
+        self.password = 'anonymous'
+
+        super(TestBasicAccountSocketIO, self).setUp()
+
+    def test_socket_io_connect(self):
+        pass
+
+    def test_socket_io_meta(self):
+        meta = {
+            "rpm": {
+                "name": "RPM",
+                "units": "RPM",
+                "enable": True,
+                "group": "Core",
+                "min": 0,
+                "max": 10000,
+                "on_dash": True,
+                "emulation": "int(5000 * modules.math.sin(modules.math.radians(x * 10)) + 5000)"
+            },
+            "water_temp_c": {
+                "name": "Water Temp",
+                "units": "C",
+                "enable": True,
+                "group": "Core",
+                "min": 0,
+                "max": 120,
+                "on_dash": True,
+                "emulation": "modules.random.randint(80, 100)"
+            }
+        }
+
+        event = threading.Event()
+
+        @self._sio.on('meta', namespace='/car')
+        def on_meta(_meta):
+            self.assertTrue(json.loads(_meta) == meta)
+            event.set()
+
+        self._is.sio.emit('meta', json.dumps(meta), namespace='/car')
+
+        event.wait(timeout=10)
+
+        self.assertTrue(event.isSet())
+
+    def test_socket_io_data(self):
+        data = {
+            "rpm": [1, 2, 3, 4, 5, 6],
+            "water_temp_c": [1, 2, 3, 4, 5, 6]
+        }
+
+        event = threading.Event()
+
+        @self._sio.on('data', namespace='/car')
+        def on_meta(_data):
+            self.assertTrue(json.loads(_data) == data)
+            event.set()
+
+        self._is.sio.emit('data', json.dumps(data), namespace='/car')
+
+        event.wait(timeout=10)
+
+        self.assertTrue(event.isSet())
+
+
 def suite():
     s = unittest.TestSuite()
 
@@ -136,5 +205,9 @@ def suite():
     s.addTest(TestBasicAccount('test_start_session'))
     s.addTest(TestBasicAccount('test_stop_session'))
     s.addTest(TestBasicAccount('test_get_session'))
+
+    s.addTest(TestBasicAccountSocketIO('test_socket_io_connect'))
+    s.addTest(TestBasicAccountSocketIO('test_socket_io_meta'))
+    s.addTest(TestBasicAccountSocketIO('test_socket_io_data'))
 
     return s

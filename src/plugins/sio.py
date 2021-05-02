@@ -110,6 +110,8 @@ def on_meta(meta):
     sql = f'INSERT INTO {tab.name} (creation, meta) VALUES (?,?)'
     tab.execute(sql, (time(), meta))
 
+    sio.emit('meta', meta, namespace='/car')
+
 
 @sio.on('data', '/car')
 @privileges.privilege_required(privileges.anon)
