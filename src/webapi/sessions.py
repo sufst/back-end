@@ -15,56 +15,75 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from src.plugins import webapi, session
+from src.plugins import webapi, sessions
 from src.helpers import privileges
 import json
 
 
-def _on_sessions_get(name):
+@sessions.requires_session()
+def _on_sessions_get():
+    session = sessions.get_mounted_session()
+
     try:
-        with open(session.get_zip_file(name), 'rb') as f:
+        with open(session.zip_path, 'rb') as f:
             c = f.read()
             rsp = webapi.Response(c)
             rsp.headers['Content-Type'] = 'application/zip'
-            rsp.headers['Content-Disposition'] = f'attachment; filename="{name}.zip"'
+            rsp.headers['Content-Disposition'] = f'attachment; filename="{session.name}.zip"'
             rsp.headers['Content-Length'] = len(c)
 
         return rsp
-    except FileExistsError as err:
+    except FileNotFoundError as err:
         return repr(err), 404
 
 
 @privileges.privilege_required(privileges.basic)
-def _on_sessions_post(name):
+def _on_sessions_post():
     data = webapi.request.get_json()
 
     sensors = data['sensors']
     meta = data['meta']
 
+    session = sessions.get_mounted_session()
+
     try:
-        session.new_session(name, sensors, meta)
+        session.create(sensors, meta)
     except Exception as err:
         return repr(err), 409
     else:
-        return json.dumps({'status': 'alive'}), 200
+        return json.dumps({'status': session.status}), 200
 
 
 @privileges.privilege_required(privileges.basic)
-def _on_sessions_patch(name):
+@sessions.requires_session()
+def _on_sessions_patch():
     data = webapi.request.get_json()
+
+    session = sessions.get_mounted_session()
 
     if 'status' in data:
         if data['status'] == 'dead':
-            session.end_session(name)
+            session.stop()
         return '', 200
     else:
         return 'No valid key to patch', 400
 
 
+# @privileges.privilege_required(privileges.basic)
+# @sessions.requires_session()
+# def _on_sessions_put():
+#     data = webapi.request.get_json()
+#
+#     if 'note' in data:
+#
+
+
 @webapi.endpoint('/sessions/<name>', methods=['GET', 'POST', 'PATCH'])
-def sessions(name):
+def _sessions(name):
+    sessions.prepare_session(name)
+
     return webapi.route({
-        'GET': lambda n: _on_sessions_get(n),
-        'POST': lambda n: _on_sessions_post(n),
-        'PATCH': lambda n: _on_sessions_patch(n)
-    }, name)
+        'GET': _on_sessions_get,
+        'POST': _on_sessions_post,
+        'PATCH': _on_sessions_patch
+    })

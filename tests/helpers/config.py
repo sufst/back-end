@@ -15,14 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import configparser
+from src.helpers import config
 
-_config = configparser.ConfigParser()
-
-
-def set_config(conf_file):
-    _config.read(conf_file)
-
-
-def get_config(section):
-    return _config[section]
+set_config = config.set_config
+get_config = config.get_config

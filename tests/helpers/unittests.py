@@ -16,8 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import unittest
-from src import main
-from multiprocessing import Process
 from tests.helpers import config, webapi
 import json
 from urllib import request, error
@@ -27,13 +25,10 @@ from socketio import Client
 class BaseTest(unittest.TestCase):
 
     def setUp(self):
-        self._pro = Process(target=main.run, args=('tests/config_test.ini',))
-
-        self._pro.start()
         self._conf = config.get_config('server')
 
     def tearDown(self):
-        self._pro.kill()
+        pass
 
 
 class BaseAccountTests(BaseTest):

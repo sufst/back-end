@@ -15,11 +15,13 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from src.helpers import privileges
+import os
+from tests.helpers import config
+import shutil
 
-anon = privileges.anon
-basic = privileges.basic
-admin = privileges.admin
-developer = privileges.developer
 
-from_string = privileges.from_string
+def clean_sessions():
+    location = config.get_config('sessions')['Location']
+
+    if os.path.exists(f'{location}/'):
+        shutil.rmtree(f'{location}')

@@ -17,6 +17,7 @@
 """
 from src.helpers import config
 from sqlite3worker import Sqlite3Worker
+import os
 
 
 class Table:
@@ -47,5 +48,16 @@ class StageTable(Table):
 
 
 def load():
-    Table.set_cursor(Sqlite3Worker(config.get_config('database')['Location']))
-    StageTable.set_cursor(Sqlite3Worker(config.get_config('database')['StageLocation']))
+    f_db = config.get_config('database')['Location']
+    f_stage_db = config.get_config('database')['StageLocation']
+
+    f_db_folder = '/'.join(f_db.split('/')[:-1])
+    if not f_db_folder == '' and not os.path.exists(f_db_folder):
+        os.makedirs(f_db_folder)
+
+    f_db_stage_folder = '/'.join(f_stage_db.split('/')[:-1])
+    if not f_db_stage_folder == '' and not os.path.exists(f_db_stage_folder):
+        os.makedirs(f_db_stage_folder)
+
+    Table.set_cursor(Sqlite3Worker(f_db))
+    StageTable.set_cursor(Sqlite3Worker(f_stage_db))

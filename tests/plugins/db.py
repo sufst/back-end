@@ -15,37 +15,25 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from src.plugins import db
 from tests.helpers import config
-from sqlite3worker import Sqlite3Worker
+import os
+import shutil
 
 
-class Table:
-    columns = [
-        'id integer PRIMARY KEY'
-    ]
-
-    _cur = None
-
-    def __init__(self):
-        self.name = type(self).__name__.lower()
-
-        sql = f"""CREATE TABLE IF NOT EXISTS {self.name} (
-                {''.join(map(lambda col: col + ', ', self.columns))[:-2]}
-                ) """
-        self.execute(sql)
-
-    def execute(self, *args, **kwargs):
-        return self._cur.execute(*args, **kwargs)
-
-    @classmethod
-    def set_cursor(cls, cur):
-        cls._cur = cur
+Table = db.Table
+StageTable = db.StageTable
+load = db.load
 
 
-class StageTable(Table):
-    pass
+def clean_db():
+    f_db = config.get_config('database')['Location']
+    f_stage_db = config.get_config('database')['StageLocation']
 
+    f_db_folder = '/'.join(f_db.split('/')[:-1])
+    if not f_db_folder == '' and os.path.exists(f_db_folder):
+        shutil.rmtree(f_db_folder)
 
-def load():
-    Table.set_cursor(Sqlite3Worker(config.get_config('database')['Location']))
-    StageTable.set_cursor(Sqlite3Worker(config.get_config('database')['StageLocation']))
+    f_db_stage_folder = '/'.join(f_stage_db.split('/')[:-1])
+    if not f_db_stage_folder == '' and os.path.exists(f_db_stage_folder):
+        shutil.rmtree(f_db_stage_folder)

@@ -16,9 +16,12 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from tests.helpers.unittests import unittest
-from tests.helpers import config
+from tests.helpers import config, sessions
 import os
 import importlib
+from tests.plugins import db
+from src import main
+from multiprocessing import Process
 
 
 def run_all_units():
@@ -44,14 +47,22 @@ def run_unit(unit):
 def run():
     config.set_config('tests/config_test.ini')
 
+    db.clean_db()
+    sessions.clean_sessions()
+
+    pro = Process(target=main.run, args=('tests/config_test.ini',))
+    pro.start()
+
     for f in os.listdir('./tests/plugins'):
         if f not in '__init__':
             module = importlib.import_module(f'tests.plugins.{f.split(".")[0]}')
             if hasattr(module, 'load'):
                 module.load()
 
-    # run_unit('anon')
-    run_all_units()
+    run_unit('sessions')
+    # run_all_units()
+
+    pro.kill()
 
 
 if __name__ == '__main__':

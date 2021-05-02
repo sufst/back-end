@@ -15,42 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import hashlib
-from tests.helpers import privileges
-from tests.plugins import db
-import os
-import json
-from time import time
+from src.plugins import users
 
-
-class Users(db.Table):
-    columns = [
-        'id INTEGER PRIMARY KEY AUTOINCREMENT',
-        'username TEXT NOT NULL',
-        'key BLOB NOT NULL',
-        'salt BLOB NOT NULL',
-        'creation REAL NOT NULL',
-        'privilege INTEGER NOT NULL',
-        'meta TEXT NOT NULL'
-    ]
-
-
-def create_user(username, password, privilege, meta):
-    tab = Users()
-
-    sql = f'SELECT username FROM {tab.name} WHERE username = ?'
-    results = tab.execute(sql, (username,))
-
-    if results:
-        raise KeyError("User already exists")
-    else:
-        salt = os.urandom(16)
-        key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100000)
-        creation = time()
-
-        sql = f'INSERT INTO {tab.name} (username, key, salt, creation, privilege, meta) VALUES (?,?,?,?,?,?)'
-        try:
-            tab.execute(sql, (username, key, salt, creation, int(privileges.from_string(privilege)), json.dumps(meta)))
-        except Exception as err:
-            print(repr(err))
-
+Users = users.Users
+create_user = users.create_user
