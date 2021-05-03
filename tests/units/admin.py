@@ -108,11 +108,11 @@ class TestAdminAccount(BaseAccountTests):
         else:
             pass
 
-    def test_get_session(self):
-
+    def test_get_session_zip(self):
         req = webapi.build_request(
             'sessions/admin',
             'GET',
+            content_type='application/zip',
             token=self.token
         )
 
@@ -120,7 +120,31 @@ class TestAdminAccount(BaseAccountTests):
             response = request.urlopen(req)
             f = io.BytesIO(response.read())
             z = zipfile.ZipFile(f, 'r')
-            if 'rpm.csv' in z.namelist() and 'water_temp_c.csv' in z.namelist():
+            names = z.namelist()
+            if ('admin/meta.json' in names and 'admin/notes.csv' in names and
+                    'admin/data/rpm.csv' in names and 'admin/data/water_temp_c.csv' in names):
+                pass
+            else:
+                self.fail('ZIP file incomplete')
+        except error.HTTPError as err:
+            self.fail(repr(err))
+        else:
+            pass
+
+    def test_get_session_json(self):
+        req = webapi.build_request(
+            'sessions/admin',
+            'GET',
+            content_type='application/json',
+            token=self.token
+        )
+
+        try:
+            response = request.urlopen(req)
+            f = json.loads(response.read())
+            if ('data' in f and
+                    'meta' in f and
+                    'notes' in f):
                 pass
             else:
                 self.fail('ZIP file incomplete')
@@ -204,7 +228,8 @@ def suite():
     s.addTest(TestAdminAccount('test_get_user'))
     s.addTest(TestAdminAccount('test_start_session'))
     s.addTest(TestAdminAccount('test_stop_session'))
-    s.addTest(TestAdminAccount('test_get_session'))
+    s.addTest(TestAdminAccount('test_get_session_json'))
+    s.addTest(TestAdminAccount('test_get_session_zip'))
 
     s.addTest(TestAdminAccountSocketIO('test_socket_io_connect'))
     s.addTest(TestAdminAccountSocketIO('test_socket_io_meta'))

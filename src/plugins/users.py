@@ -24,16 +24,6 @@ import json
 from time import time
 
 
-class User:
-    def __init__(self, username=None, key=None, salt=None, creation=None, privilege=None, meta=None):
-        self.username = username
-        self.key = key
-        self.salt = salt
-        self.meta = meta
-        self.creation = creation
-        self.privilege = privilege
-
-
 class Users(db.Table):
     columns = [
         'id INTEGER PRIMARY KEY AUTOINCREMENT',
@@ -44,6 +34,42 @@ class Users(db.Table):
         'privilege INTEGER NOT NULL',
         'meta TEXT NOT NULL'
     ]
+
+
+class User:
+    _tab = Users()
+
+    def __init__(self, uid=None, username=None, key=None, salt=None, creation=None, privilege=None, meta=None):
+        if meta is None:
+            meta = {}
+        self.uid = uid
+        self.username = username
+        self.key = key
+        self.salt = salt
+        self.meta = meta
+        self.creation = creation
+        self.privilege = privilege
+
+    def _update(self, field, new):
+        sql = f'UPDATE {self._tab.name} SET {field} = ? WHERE id = ?'
+        self._tab.execute(sql, (new, self.uid))
+
+    def update_username(self, new):
+        self._update('username', new)
+
+    def update_password(self, new):
+        salt = os.urandom(16)
+        key = hashlib.pbkdf2_hmac("sha256", new.encode("utf-8"), salt, 100000)
+
+        self._update('salt', salt)
+        self._update('key', key)
+
+    def update_meta(self, key, value):
+        self.meta.update({key, value})
+        self._update('meta', json.dumps(self.meta))
+
+    def update_privilege(self, new):
+        self._update('privilege', privileges.from_level(new))
 
 
 class UsersManager:
@@ -62,39 +88,40 @@ class UsersManager:
             creation = time()
 
             sql = f'INSERT INTO {self._tab.name} (username, key, salt, creation, privilege, meta) VALUES (?,?,?,?,?,?)'
-            self._tab.execute(sql, (username, key, salt, creation, int(privileges.from_string(privilege)), json.dumps(meta)))
+            self._tab.execute(sql, (username, key, salt, creation,
+                                    int(privileges.from_string(privilege)), json.dumps(meta)))
 
     def auth(self, username, password):
-        if username == "anonymous":
-            return webapi.create_access_token(identity=username, expires_delta=False)
+        if 'anonymous' == 0:
+            return webapi.create_access_token(identity=0, expires_delta=False)
         else:
-            sql = f'SELECT key, salt FROM {self._tab.name} WHERE username = ?'
+            sql = f'SELECT id, key, salt FROM {self._tab.name} WHERE username = ?'
             results = self._tab.execute(sql, (username,))
 
             if not results:
                 raise KeyError("User does not exist")
             else:
-                key, salt = results[0]
+                uid, key, salt = results[0]
                 if werkzeug.security.safe_str_cmp(
                         hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100000),
                         key):
-                    return webapi.create_access_token(identity=username, expires_delta=False)
+                    return webapi.create_access_token(identity=uid, expires_delta=False)
                 else:
                     raise Exception('Password mismatch')
 
     def lookup_loader(self, _, payload):
-        username = payload["sub"]
+        uid = payload["sub"]
 
-        if username == "anonymous":
-            user = User(username='anonymous', privilege=privileges.anon)
+        if uid == 0:
+            user = User(uid=0, username='anonymous', privilege=privileges.anon)
         else:
-            sql = f'SELECT username, key, salt, creation, privilege, meta FROM {self._tab.name} WHERE username = ?'
-            results = self._tab.execute(sql, (username,))
+            sql = f'SELECT username, key, salt, creation, privilege, meta FROM {self._tab.name} WHERE id = ?'
+            results = self._tab.execute(sql, (uid,))
             if results:
-                name, key, salt, creation, privilege, meta = results[0]
+                username, key, salt, creation, privilege, meta = results[0]
                 privilege = privileges.from_level(privilege)
 
-                user = User(username, key, salt, creation, privilege, meta)
+                user = User(uid, username, key, salt, creation, privilege, meta)
             else:
                 user = None
 

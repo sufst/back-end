@@ -42,6 +42,16 @@ def _on_user_get():
 def _on_user_post():
     data = webapi.request.get_json()
 
+    fields = [
+        'username',
+        'password',
+        'privilege',
+        'meta'
+    ]
+
+    if not set(data.keys()) == set(fields):
+        return 'Missing user args', 400
+
     username = data['username']
     password = data['password']
     privilege = data['privilege']
@@ -55,9 +65,51 @@ def _on_user_post():
         return str(error), 409
 
 
+def _on_user_patch_username(new):
+    u = webapi.current_user
+    u.update_username(new)
+
+
+def _on_user_patch_password(new):
+    u = webapi.current_user
+    u.update_password(new)
+
+
+def _on_user_patch_meta(new):
+    k, v = new
+    u = webapi.current_user
+    u.update_meta(k, v)
+
+
+@privileges.privilege_required(privileges.admin)
+def _on_user_patch_privilege(new):
+    u = webapi.current_user
+    u.update_privilege(new)
+
+
 @privileges.privilege_required(privileges.basic)
 def _on_user_patch():
-    return None, 409
+    data = webapi.request.get_json()
+
+    handlers = {
+        'username': lambda new: _on_user_patch_username(new),
+        'password': lambda new: _on_user_patch_password(new),
+        'meta': lambda new: _on_user_patch_meta(new),
+        'privilege': lambda new: _on_user_patch_privilege(new)
+    }
+
+    args = list(handlers.keys())
+
+    if not list(filter(lambda k: k in args, list(data.keys()))):
+        return 'No valid args in request', 400
+
+    try:
+        for key, value in data.items():
+            if key in handlers:
+                handlers[key](value)
+        return '', 200
+    except Exception as err:
+        return repr(err), 400
 
 
 @webapi.endpoint('/user', methods=['GET', 'POST', 'PATCH'])

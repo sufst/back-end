@@ -96,10 +96,27 @@ class TestAnonAccount(BaseAccountTests):
         else:
             pass
 
-    def test_get_session(self):
+    def test_get_session_zip(self):
         req = webapi.build_request(
             'sessions/anon',
-            'GET'
+            'GET',
+            content_type='application/zip',
+            token=self.token
+        )
+
+        try:
+            request.urlopen(req)
+        except error.HTTPError as err:
+            self.assertTrue(err.code != 401)
+        else:
+            pass
+
+    def test_get_session_json(self):
+        req = webapi.build_request(
+            'sessions/anon',
+            'GET',
+            content_type='application/json',
+            token=self.token
         )
 
         try:
@@ -184,7 +201,8 @@ def suite():
     s.addTest(TestAnonAccount('test_get_user'))
     s.addTest(TestAnonAccount('test_start_session'))
     s.addTest(TestAnonAccount('test_stop_session'))
-    s.addTest(TestAnonAccount('test_get_session'))
+    s.addTest(TestAnonAccount('test_get_session_json'))
+    s.addTest(TestAnonAccount('test_get_session_zip'))
 
     s.addTest(TestAnonAccountSocketIO('test_socket_io_connect'))
     s.addTest(TestAnonAccountSocketIO('test_socket_io_meta'))

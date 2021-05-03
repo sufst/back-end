@@ -20,50 +20,67 @@ from src.helpers import privileges
 import json
 
 
-@sessions.requires_session()
-def _on_sessions_get():
+def _on_sessions_get_zip():
     session = sessions.get_mounted_session()
 
+    try:
+        with open(session.zip_path, 'rb') as f:
+            c = f.read()
+            rsp = webapi.Response(c)
+            rsp.headers['Content-Type'] = 'application/zip'
+            rsp.headers['Content-Disposition'] = f'attachment; filename="{session.name}.zip"'
+            rsp.headers['Content-Length'] = len(c)
+
+        return rsp
+    except FileNotFoundError as err:
+        return repr(err), 404
+
+
+def _on_session_get_json():
+    session = sessions.get_mounted_session()
+
+    try:
+        d = {
+            'meta': session.meta,
+            'notes': session.notes,
+            'data': session.data
+        }
+        rsp = webapi.Response(json.dumps(d))
+        rsp.headers['Content-Type'] = 'application/json'
+
+        return rsp
+    except Exception as err:
+        return repr(err), 500
+
+
+@sessions.requires_session()
+def _on_sessions_get():
     content_type = webapi.request.headers.get('Content-Type')
 
-    if content_type == 'application/zip':
-        try:
-            with open(session.zip_path, 'rb') as f:
-                c = f.read()
-                rsp = webapi.Response(c)
-                rsp.headers['Content-Type'] = 'application/zip'
-                rsp.headers['Content-Disposition'] = f'attachment; filename="{session.name}.zip"'
-                rsp.headers['Content-Length'] = len(c)
+    handlers = {
+        'application/zip': lambda: _on_sessions_get_zip(),
+        'application/json': lambda: _on_session_get_json()
+    }
 
-            return rsp
-        except FileNotFoundError as err:
-            return repr(err), 404
-    elif content_type == 'application/json':
-        try:
-            d = {
-                'meta': session.meta,
-                'notes': session.notes,
-                'data': session.data
-            }
-            rsp = webapi.Response(json.dumps(d))
-            rsp.headers['Content-Type'] = 'application/json'
+    args = list(handlers.keys())
 
-            return rsp
-        except Exception as err:
-            return repr(err), 500
-    else:
+    if content_type not in args:
         return 'Invalid Content-Type', 400
+
+    return handlers[content_type]()
 
 
 @privileges.privilege_required(privileges.basic)
 def _on_sessions_post():
     data = webapi.request.get_json()
 
-    if 'sensors' not in data:
-        return 'Sensors not in request', 400
+    fields = [
+        'sensors',
+        'meta'
+    ]
 
-    if 'meta' not in data:
-        return 'Meta not in request', 400
+    if not set(fields) == set(data.keys()):
+        return 'Invalid session args', 400
 
     sensors = data['sensors']
     meta = data['meta']
@@ -78,19 +95,38 @@ def _on_sessions_post():
         return json.dumps({'status': session.status}), 200
 
 
+def _on_sessions_patch_status(status):
+    session = sessions.get_mounted_session()
+
+    if status == 'dead':
+        session.stop()
+
+
 @privileges.privilege_required(privileges.basic)
 @sessions.requires_session()
 def _on_sessions_patch():
     data = webapi.request.get_json()
 
+    handlers = {
+        'status': lambda s: _on_sessions_patch_status(s)
+    }
+
+    args = list(handlers.keys())
+
+    if not list(filter(lambda k: k in args, list(data.keys()))):
+        return 'No valid arg', 400
+
+    for key, value in data.items():
+        if key in handlers:
+            handlers[key](value)
+
+    return '', 200
+
+
+def _on_sessions_put_note(note):
     session = sessions.get_mounted_session()
 
-    if 'status' in data:
-        if data['status'] == 'dead':
-            session.stop()
-        return '', 200
-    else:
-        return 'No valid key to patch', 400
+    session.add_note(note)
 
 
 @privileges.privilege_required(privileges.basic)
@@ -98,13 +134,20 @@ def _on_sessions_patch():
 def _on_sessions_put():
     data = webapi.request.get_json()
 
-    session = sessions.get_mounted_session()
+    handlers = {
+        'note': lambda n: _on_sessions_put_note(n)
+    }
 
-    if 'note' in data:
-        session.add_note(data['note'])
-        return '', 200
-    else:
-        return 'No valid key to put', 400
+    args = list(handlers.keys())
+
+    if not list(filter(lambda k: k in args, list(data.keys()))):
+        return 'No valid arg', 400
+
+    for key, value in data.items():
+        if key in handlers:
+            handlers[key](value)
+
+    return '', 200
 
 
 @webapi.endpoint('/sessions/<name>', methods=['GET', 'POST', 'PATCH', 'PUT'])

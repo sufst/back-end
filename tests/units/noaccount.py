@@ -101,6 +101,34 @@ class TestNoAccount(BaseTest):
         else:
             pass
 
+    def test_get_session_zip(self):
+        req = webapi.build_request(
+            'sessions/test',
+            'GET',
+            content_type='application/zip'
+        )
+
+        try:
+            request.urlopen(req)
+        except error.HTTPError as err:
+            self.assertTrue(err.code != 401)
+        else:
+            pass
+
+    def test_get_session_json(self):
+        req = webapi.build_request(
+            'sessions/test',
+            'GET',
+            content_type='application/json'
+        )
+
+        try:
+            request.urlopen(req)
+        except error.HTTPError as err:
+            self.assertTrue(err.code != 401)
+        else:
+            pass
+
 
 def suite():
     s = unittest.TestSuite()
@@ -109,6 +137,7 @@ def suite():
     s.addTest(TestNoAccount('test_get_user'))
     s.addTest(TestNoAccount('test_start_session'))
     s.addTest(TestNoAccount('test_stop_session'))
-    s.addTest(TestNoAccount('test_get_session'))
+    s.addTest(TestNoAccount('test_get_session_json'))
+    s.addTest(TestNoAccount('test_get_session_zip'))
 
     return s

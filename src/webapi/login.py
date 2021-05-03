@@ -22,6 +22,14 @@ import json
 def _on_login_post():
     data = webapi.request.get_json()
 
+    fields = [
+        'username',
+        'password'
+    ]
+
+    if not set(fields) == set(data.keys()):
+        return 'Invalid login args'
+
     username = data['username']
     password = data['password']
 
