@@ -59,7 +59,8 @@ def run():
             if hasattr(module, 'load'):
                 module.load()
 
-    run_all_units()
+    # run_all_units()
+    run_unit('admin')
 
     pro.kill()
 

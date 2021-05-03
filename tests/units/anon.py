@@ -31,10 +31,9 @@ class TestAnonAccount(BaseAccountTests):
 
     def test_create_user(self):
         req = webapi.build_request(
-            'user',
+            'users/username',
             'POST',
-            data={'username': 'username',
-                  'password': 'password',
+            data={'password': 'password',
                   'privilege': 'Basic',
                   'meta': {
                       'dept': 'Electronics',

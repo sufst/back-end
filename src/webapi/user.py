@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from src.helpers import privileges
-from src.plugins import users, webapi
+from src.plugins import webapi
 import json
 
 
@@ -36,33 +36,6 @@ def _on_user_get():
         return rsp
     else:
         return None, 404
-
-
-@privileges.privilege_required(privileges.admin)
-def _on_user_post():
-    data = webapi.request.get_json()
-
-    fields = [
-        'username',
-        'password',
-        'privilege',
-        'meta'
-    ]
-
-    if not set(data.keys()) == set(fields):
-        return 'Missing user args', 400
-
-    username = data['username']
-    password = data['password']
-    privilege = data['privilege']
-    meta = data['meta']
-
-    try:
-        users.create_user(username, password, privilege, meta)
-        return '', 200
-    except Exception as error:
-        print(error)
-        return str(error), 409
 
 
 def _on_user_patch_username(new):
@@ -112,10 +85,9 @@ def _on_user_patch():
         return repr(err), 400
 
 
-@webapi.endpoint('/user', methods=['GET', 'POST', 'PATCH'])
+@webapi.endpoint('/user', methods=['GET', 'PATCH'])
 def user():
     return webapi.route({
         'GET': lambda: _on_user_get(),
-        'POST': lambda: _on_user_post(),
         'PATCH': lambda: _on_user_patch()
     })

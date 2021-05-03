@@ -16,34 +16,39 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from src.plugins import users, webapi
-import json
+from src.helpers import privileges
 
 
-def _on_login_post():
+def _on_users_post():
     data = webapi.request.get_json()
 
     fields = [
-        'password'
+        'password',
+        'privilege',
+        'meta'
     ]
 
-    if not set(fields) == set(data.keys()):
-        return 'Invalid login args'
+    if not set(data.keys()) == set(fields):
+        return 'Missing user args', 400
 
-    password = data['password']
     user = webapi.request.wanted_user
+    password = data['password']
+    privilege = data['privilege']
+    meta = data['meta']
 
     try:
-        token = user.auth(password)
-    except KeyError:
-        return {"msg": "Bad username or password"}, 401
-    else:
-        return json.dumps({'access_token': token})
+        user.create(password, privilege, meta)
+        return '', 200
+    except Exception as error:
+        print(error)
+        return str(error), 409
 
 
-@webapi.endpoint('/login/<user>', methods=['POST'])
-def login(user):
+@webapi.endpoint('/users/<user>', methods=['POST'])
+@privileges.privilege_required(privileges.admin)
+def _users(user):
     users.prepare_request(user)
 
     return webapi.route({
-        'POST': lambda: _on_login_post()
+        'POST': lambda: _on_users_post()
     })

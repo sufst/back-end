@@ -21,7 +21,7 @@ import json
 
 
 def _on_sessions_get_zip():
-    session = sessions.get_mounted_session()
+    session = webapi.request.current_session
 
     try:
         with open(session.zip_path, 'rb') as f:
@@ -37,7 +37,7 @@ def _on_sessions_get_zip():
 
 
 def _on_session_get_json():
-    session = sessions.get_mounted_session()
+    session = webapi.request.current_session
 
     try:
         d = {
@@ -85,7 +85,7 @@ def _on_sessions_post():
     sensors = data['sensors']
     meta = data['meta']
 
-    session = sessions.get_mounted_session()
+    session = webapi.request.current_session
 
     try:
         session.create(sensors, meta)
@@ -96,7 +96,7 @@ def _on_sessions_post():
 
 
 def _on_sessions_patch_status(status):
-    session = sessions.get_mounted_session()
+    session = webapi.request.current_session
 
     if status == 'dead':
         session.stop()
@@ -124,7 +124,7 @@ def _on_sessions_patch():
 
 
 def _on_sessions_put_note(note):
-    session = sessions.get_mounted_session()
+    session = webapi.request.current_session
 
     session.add_note(note)
 
@@ -152,7 +152,7 @@ def _on_sessions_put():
 
 @webapi.endpoint('/sessions/<name>', methods=['GET', 'POST', 'PATCH', 'PUT'])
 def _sessions(name):
-    sessions.prepare_session(name)
+    sessions.prepare_request(name)
 
     return webapi.route({
         'GET': lambda: _on_sessions_get(),

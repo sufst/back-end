@@ -39,15 +39,13 @@ class Users(db.Table):
 class User:
     _tab = Users()
 
-    def __init__(self, uid=None, username=None, key=None, salt=None, creation=None, privilege=None, meta=None):
-        if meta is None:
-            meta = {}
+    def __init__(self, username=None, uid=None, privilege=None):
         self.uid = uid
         self.username = username
-        self.key = key
-        self.salt = salt
-        self.meta = meta
-        self.creation = creation
+        self.key = None
+        self.salt = None
+        self.meta = {}
+        self.creation = None
         self.privilege = privilege
 
     def _update(self, field, new):
@@ -71,14 +69,33 @@ class User:
     def update_privilege(self, new):
         self._update('privilege', privileges.from_level(new))
 
+    def _from_sql(self, sql, args):
+        results = self._tab.execute(sql, args)
+        if results:
+            uid, username, key, salt, creation, privilege, meta = results[0]
+            privilege = privileges.from_level(privilege)
 
-class UsersManager:
-    def __init__(self):
-        self._tab = Users()
+            self.uid = uid
+            self.username = username
+            self.key = key
+            self.salt = salt
+            self.creation = creation
+            self.privilege = privilege
+            self.meta = meta
 
-    def create(self, username, password, privilege, meta):
-        sql = f'SELECT username FROM {self._tab.name} WHERE username = ?'
-        results = self._tab.execute(sql, (username,))
+        return self
+
+    def from_uid(self, uid):
+        sql = f'SELECT id, username, key, salt, creation, privilege, meta FROM {self._tab.name} WHERE id = ?'
+        return self._from_sql(sql, (uid,))
+
+    def from_username(self):
+        sql = f'SELECT id, username, key, salt, creation, privilege, meta FROM {self._tab.name} WHERE username = ?'
+        return self._from_sql(sql, (self.username,))
+
+    def create(self, password, privilege, meta):
+        sql = f'SELECT id FROM {self._tab.name} WHERE username = ?'
+        results = self._tab.execute(sql, (self.username,))
 
         if results:
             raise KeyError("User already exists")
@@ -88,56 +105,67 @@ class UsersManager:
             creation = time()
 
             sql = f'INSERT INTO {self._tab.name} (username, key, salt, creation, privilege, meta) VALUES (?,?,?,?,?,?)'
-            self._tab.execute(sql, (username, key, salt, creation,
+            self._tab.execute(sql, (self.username, key, salt, creation,
                                     int(privileges.from_string(privilege)), json.dumps(meta)))
 
-    def auth(self, username, password):
-        if 'anonymous' == 0:
+            sql = f'SELECT id FROM {self._tab.name} WHERE username = ?'
+            results = self._tab.execute(sql, (self.username,))
+
+            self.uid, = results[0]
+            self.key = key
+            self.salt = salt
+            self.creation = creation
+            self.privilege = privilege
+            self.meta = meta
+
+    def auth(self, password):
+        if self.username == 'anonymous':
             return webapi.create_access_token(identity=0, expires_delta=False)
         else:
-            sql = f'SELECT id, key, salt FROM {self._tab.name} WHERE username = ?'
-            results = self._tab.execute(sql, (username,))
-
-            if not results:
+            if self.username is None:
                 raise KeyError("User does not exist")
             else:
-                uid, key, salt = results[0]
                 if werkzeug.security.safe_str_cmp(
-                        hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100000),
-                        key):
-                    return webapi.create_access_token(identity=uid, expires_delta=False)
+                        hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), self.salt, 100000),
+                        self.key):
+                    return webapi.create_access_token(identity=self.uid, expires_delta=False)
                 else:
                     raise Exception('Password mismatch')
 
-    def lookup_loader(self, _, payload):
+
+class UsersManager:
+    def __init__(self):
+        self._tab = Users()
+
+    @staticmethod
+    def prepare_webapi_request(username):
+        setattr(webapi.request, 'wanted_user', User(username=username).from_username())
+
+    @staticmethod
+    def lookup_loader(_, payload):
         uid = payload["sub"]
 
         if uid == 0:
-            user = User(uid=0, username='anonymous', privilege=privileges.anon)
+            user = User(username='anonymous', uid=0, privilege=privileges.anon)
         else:
-            sql = f'SELECT username, key, salt, creation, privilege, meta FROM {self._tab.name} WHERE id = ?'
-            results = self._tab.execute(sql, (uid,))
-            if results:
-                username, key, salt, creation, privilege, meta = results[0]
-                privilege = privileges.from_level(privilege)
-
-                user = User(uid, username, key, salt, creation, privilege, meta)
-            else:
-                user = None
+            user = User().from_uid(uid)
 
         return user
 
 
 _manager = UsersManager()
 
-create_user = _manager.create
-auth_user = _manager.auth
+prepare_request = _manager.prepare_webapi_request
+
+
+def create_user(username, password, privilege, meta):
+    User(username).create(password, privilege, meta)
 
 
 def load():
     try:
-        _manager.create('intermediate_server', 'sufst', 'Basic', {})
-        _manager.create('anonymous', 'anonymous', 'Anon', {})
+        create_user('intermediate_server', 'sufst', 'Basic', {})
+        create_user('anonymous', 'anonymous', 'Anon', {})
     except KeyError:
         pass
     except Exception as err:

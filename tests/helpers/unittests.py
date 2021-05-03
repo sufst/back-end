@@ -42,9 +42,8 @@ class BaseAccountTests(BaseTest):
     def setUp(self):
         super(BaseAccountTests, self).setUp()
 
-        end_point = f'http://localhost:{self._conf["Port"]}/login'
+        end_point = f'http://localhost:{self._conf["Port"]}/login/{self.username}'
         data = json.dumps({
-            'username': f'{self.username}',
             'password': f'{self.password}'
         }).encode('utf-8')
         method = 'POST'
@@ -55,7 +54,8 @@ class BaseAccountTests(BaseTest):
 
         try:
             f = request.urlopen(req)
-            data = json.loads(f.read().decode('utf-8'))
+            raw = f.read().decode('utf-8')
+            data = json.loads(raw)
             self.assertTrue('access_token' in data)
             self.token = data['access_token']
         except error.HTTPError as err:
@@ -73,10 +73,9 @@ class _IntermediateServer:
 
     def connect(self):
         req = webapi.build_request(
-            'login',
+            'login/intermediate_server',
             'POST',
-            data={'username': 'intermediate_server',
-                  'password': 'sufst'},
+            data={'password': 'sufst'},
             content_type='application/json'
         )
 

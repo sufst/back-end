@@ -39,10 +39,9 @@ class TestAdminAccount(BaseAccountTests):
 
     def test_create_user(self):
         req = webapi.build_request(
-            'user',
+            'users/admin',
             'POST',
-            data={'username': 'admin',
-                  'password': 'password',
+            data={'password': 'password',
                   'privilege': 'Basic',
                   'meta': {
                       'dept': 'Electronics',

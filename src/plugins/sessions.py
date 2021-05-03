@@ -18,7 +18,7 @@
 
 import csv
 import os
-from src.plugins import db
+from src.plugins import db, webapi
 from time import time
 import json
 from src.helpers import config, zip
@@ -241,16 +241,16 @@ class SessionsManager:
     def mounted_session(self):
         return self._mounted_session
 
-    def prepare_mount(self, session):
+    def prepare_webapi_request(self, session):
         if session not in self:
             self._sessions.append(Session(session))
             self._sessions_proxy[session] = weakref.proxy(self._sessions[-1])
 
-        self._mounted_session = self._sessions_proxy[session]
+        setattr(webapi.request, 'current_session', self._sessions_proxy[session])
 
-    def cleanup_mount(self):
-        if _manager.mounted_session and _manager.mounted_session.status is None:
-            session = self._sessions.pop(-1)
+    def cleanup_webapi_request(self):
+        if webapi.request.current_session and webapi.request.current_session.status is None:
+            session = self._sessions.pop(self._sessions.index(webapi.request.current_session))
             del self._sessions_proxy[session.name]
 
     def add_sensors_data(self, data):
@@ -275,11 +275,7 @@ class SessionsManager:
 _manager = SessionsManager()
 
 add_sensors_data = _manager.add_sensors_data
-prepare_session = _manager.prepare_mount
-
-
-def get_mounted_session():
-    return _manager.mounted_session
+prepare_request = _manager.prepare_webapi_request
 
 
 def load():
@@ -295,11 +291,11 @@ def requires_session():
     def wrapper(func):
         @functools.wraps(func)
         def decorator(*args, **kwargs):
-            if _manager.mounted_session and _manager.mounted_session.is_exists:
+            if webapi.request.current_session and webapi.request.current_session.is_exists:
                 result = func(*args, **kwargs)
             else:
                 result = 'Sessions does not exist', 404
-            _manager.cleanup_mount()
+            _manager.cleanup_webapi_request()
             return result
 
         return decorator

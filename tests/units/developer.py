@@ -39,10 +39,9 @@ class TestDeveloperAccount(BaseAccountTests):
 
     def test_create_user(self):
         req = webapi.build_request(
-            'user',
+            'users/developer',
             'POST',
-            data={'username': 'developer',
-                  'password': 'password',
+            data={'password': 'password',
                   'privilege': 'Basic',
                   'meta': {
                       'dept': 'Electronics',
