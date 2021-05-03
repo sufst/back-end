@@ -17,7 +17,7 @@
 """
 from urllib import request, error
 from tests.helpers.unittests import BaseAccountTests, unittest, BaseAccountSocketIoTest
-from tests.helpers import webapi
+from tests.helpers import webapi, users
 import threading
 import json
 
@@ -26,6 +26,11 @@ class TestAnonAccount(BaseAccountTests):
     def setUp(self):
         self.username = 'anonymous'
         self.password = 'anonymous'
+
+        try:
+            users.create_user('dummyAnon', 'dummyAnon', 'Basic', {})
+        except KeyError:
+            pass
 
         super(TestAnonAccount, self).setUp()
 
@@ -61,6 +66,50 @@ class TestAnonAccount(BaseAccountTests):
             self.assertTrue(err.code == 401)
         else:
             self.fail()
+
+    def test_get_dummy_user(self):
+        req = webapi.build_request(
+            'users/dummyAnon',
+            'GET',
+            token=self.token
+        )
+
+        try:
+            request.urlopen(req)
+        except error.HTTPError as err:
+            self.assertTrue(err.code == 401)
+        else:
+            pass
+
+    def test_raise_dummy_privilege(self):
+        req = webapi.build_request(
+            'users/dummyAnon',
+            'PATCH',
+            data={'privilege': 'Admin'},
+            content_type='application/json',
+            token=self.token
+        )
+
+        try:
+            request.urlopen(req)
+        except error.HTTPError as err:
+            self.assertTrue(err.code == 401)
+        else:
+            pass
+
+    def test_get_dummy_admin_raised(self):
+        req = webapi.build_request(
+            'users/dummyAnon',
+            'GET',
+            token=self.token
+        )
+
+        try:
+            request.urlopen(req)
+        except error.HTTPError as err:
+            self.assertTrue(err.code == 401)
+        else:
+            pass
 
     def test_start_session(self):
         req = webapi.build_request(
@@ -198,6 +247,9 @@ def suite():
 
     s.addTest(TestAnonAccount('test_create_user'))
     s.addTest(TestAnonAccount('test_get_user'))
+    s.addTest(TestAnonAccount('test_get_dummy_user'))
+    s.addTest(TestAnonAccount('test_raise_dummy_privilege'))
+    s.addTest(TestAnonAccount('test_get_dummy_admin_raised'))
     s.addTest(TestAnonAccount('test_start_session'))
     s.addTest(TestAnonAccount('test_stop_session'))
     s.addTest(TestAnonAccount('test_get_session_json'))

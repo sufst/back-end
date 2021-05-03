@@ -205,8 +205,8 @@ class TestAdminAccount(BaseAccountTests):
 
 class TestAdminAccountSocketIO(BaseAccountSocketIoTest):
     def setUp(self):
-        self.username = 'admin'
-        self.password = 'password'
+        self.username = 'testAdmin'
+        self.password = 'testAdmin'
 
         super(TestAdminAccountSocketIO, self).setUp()
 

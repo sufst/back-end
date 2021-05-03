@@ -128,7 +128,7 @@ class User:
         if self.username == 'anonymous':
             return webapi.create_access_token(identity=0, expires_delta=False)
         else:
-            if self.username is None:
+            if not self.key or not self.salt:
                 raise KeyError("User does not exist")
             else:
                 if werkzeug.security.safe_str_cmp(
@@ -136,7 +136,7 @@ class User:
                         self.key):
                     return webapi.create_access_token(identity=self.uid, expires_delta=False)
                 else:
-                    raise Exception('Password mismatch')
+                    raise KeyError('Password mismatch')
 
 
 class UsersManager:

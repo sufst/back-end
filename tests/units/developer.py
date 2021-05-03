@@ -155,8 +155,8 @@ class TestDeveloperAccount(BaseAccountTests):
 
 class TestDeveloperAccountSocketIO(BaseAccountSocketIoTest):
     def setUp(self):
-        self.username = 'anonymous'
-        self.password = 'anonymous'
+        self.username = 'testDeveloper'
+        self.password = 'testDeveloper'
 
         super(TestDeveloperAccountSocketIO, self).setUp()
 

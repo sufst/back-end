@@ -27,8 +27,8 @@ import json
 class TestBasicAccount(BaseAccountTests):
 
     def setUp(self):
-        self.username = 'test'
-        self.password = 'test'
+        self.username = 'basic'
+        self.password = 'basic'
 
         try:
             users.create_user(self.username, self.password, 'Basic', {})
@@ -155,8 +155,8 @@ class TestBasicAccount(BaseAccountTests):
 
 class TestBasicAccountSocketIO(BaseAccountSocketIoTest):
     def setUp(self):
-        self.username = 'anonymous'
-        self.password = 'anonymous'
+        self.username = 'basic'
+        self.password = 'basic'
 
         super(TestBasicAccountSocketIO, self).setUp()
 
