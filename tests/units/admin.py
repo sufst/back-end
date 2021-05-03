@@ -39,7 +39,7 @@ class TestAdminAccount(BaseAccountTests):
 
     def test_create_user(self):
         req = webapi.build_request(
-            'users/admin',
+            'users/dummyAdmin',
             'POST',
             data={'password': 'password',
                   'privilege': 'Basic',
@@ -67,6 +67,56 @@ class TestAdminAccount(BaseAccountTests):
 
         try:
             request.urlopen(req)
+        except error.HTTPError as err:
+            self.fail(repr(err))
+        else:
+            pass
+
+    def test_get_dummy_user(self):
+        req = webapi.build_request(
+            'users/dummyAdmin',
+            'GET',
+            token=self.token
+        )
+
+        try:
+            response = request.urlopen(req)
+            meta = json.loads(response.read())
+            self.assertTrue('privilege' in meta)
+            self.assertTrue(meta['privilege'] == 'Basic')
+        except error.HTTPError as err:
+            self.fail(repr(err))
+        else:
+            pass
+
+    def test_raise_dummy_privilege(self):
+        req = webapi.build_request(
+            'users/dummyAdmin',
+            'PATCH',
+            data={'privilege': 'Admin'},
+            content_type='application/json',
+            token=self.token
+        )
+
+        try:
+            request.urlopen(req)
+        except error.HTTPError as err:
+            self.fail(repr(err))
+        else:
+            pass
+
+    def test_get_dummy_admin_raised(self):
+        req = webapi.build_request(
+            'users/dummyAdmin',
+            'GET',
+            token=self.token
+        )
+
+        try:
+            response = request.urlopen(req)
+            meta = json.loads(response.read())
+            self.assertTrue('privilege' in meta)
+            self.assertTrue(meta['privilege'] == 'Admin')
         except error.HTTPError as err:
             self.fail(repr(err))
         else:
@@ -225,6 +275,9 @@ def suite():
 
     s.addTest(TestAdminAccount('test_create_user'))
     s.addTest(TestAdminAccount('test_get_user'))
+    s.addTest(TestAdminAccount('test_get_dummy_user'))
+    s.addTest(TestAdminAccount('test_raise_dummy_privilege'))
+    s.addTest(TestAdminAccount('test_get_dummy_admin_raised'))
     s.addTest(TestAdminAccount('test_start_session'))
     s.addTest(TestAdminAccount('test_stop_session'))
     s.addTest(TestAdminAccount('test_get_session_json'))

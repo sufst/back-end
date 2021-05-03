@@ -44,7 +44,7 @@ class BaseAccountTests(BaseTest):
 
         end_point = f'http://localhost:{self._conf["Port"]}/login/{self.username}'
         data = json.dumps({
-            'password': f'{self.password}'
+            'password': self.password
         }).encode('utf-8')
         method = 'POST'
         headers = {

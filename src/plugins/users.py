@@ -48,26 +48,32 @@ class User:
         self.creation = None
         self.privilege = privilege
 
-    def _update(self, field, new):
-        sql = f'UPDATE {self._tab.name} SET {field} = ? WHERE id = ?'
-        self._tab.execute(sql, (new, self.uid))
-
     def update_username(self, new):
-        self._update('username', new)
+        sql = f'UPDATE {self._tab.name} SET username = ? WHERE id = ?'
+        self._tab.execute(sql, (new, self.uid))
+        self.username = new
 
     def update_password(self, new):
         salt = os.urandom(16)
         key = hashlib.pbkdf2_hmac("sha256", new.encode("utf-8"), salt, 100000)
 
-        self._update('salt', salt)
-        self._update('key', key)
+        sql = f'UPDATE {self._tab.name} SET salt = ? WHERE id = ?'
+        self._tab.execute(sql, (new, self.uid))
+        self.salt = salt
+
+        sql = f'UPDATE {self._tab.name} SET key = ? WHERE id = ?'
+        self._tab.execute(sql, (new, self.uid))
+        self.key = key
 
     def update_meta(self, key, value):
         self.meta.update({key, value})
-        self._update('meta', json.dumps(self.meta))
+        sql = f'UPDATE {self._tab.name} SET meta = ? WHERE id = ?'
+        self._tab.execute(sql, (self.meta, self.uid))
 
     def update_privilege(self, new):
-        self._update('privilege', privileges.from_level(new))
+        sql = f'UPDATE {self._tab.name} SET privilege = ? WHERE id = ?'
+        self._tab.execute(sql, (int(privileges.from_string(new)), self.uid))
+        self.privilege = new
 
     def _from_sql(self, sql, args):
         results = self._tab.execute(sql, args)
