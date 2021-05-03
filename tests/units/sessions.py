@@ -97,6 +97,22 @@ class TestSessions(BaseAccountSocketIoTest):
 
         self.assertTrue(event.isSet())
 
+    def test_session_note(self):
+        req = webapi.build_request(
+            'sessions/test',
+            'PUT',
+            data={'note': 'This is patrick'},
+            content_type='application/json',
+            token=self.token
+        )
+
+        try:
+            request.urlopen(req)
+        except error.HTTPError as err:
+            self.fail(repr(err))
+        else:
+            pass
+
     def test_stop_session(self):
         req = webapi.build_request(
             'sessions/test',
@@ -113,10 +129,11 @@ class TestSessions(BaseAccountSocketIoTest):
         else:
             pass
 
-    def test_get_session(self):
+    def test_get_session_zip(self):
         req = webapi.build_request(
             'sessions/test',
             'GET',
+            content_type='application/zip',
             token=self.token
         )
 
@@ -124,10 +141,31 @@ class TestSessions(BaseAccountSocketIoTest):
             response = request.urlopen(req)
             f = io.BytesIO(response.read())
             z = zipfile.ZipFile(f, 'r')
-            if ('rpm.csv' in z.namelist() and
-                    'water_temp_c.csv' in z.namelist() and
-                    'meta.json' in z.namelist() and
-                    'notes.csv' in z.namelist()):
+            names = z.namelist()
+            if ('test/meta.json' in names and 'test/notes.csv' in names and
+                    'test/data/rpm.csv' in names and 'test/data/water_temp_c.csv' in names):
+                pass
+            else:
+                self.fail('ZIP file incomplete')
+        except error.HTTPError as err:
+            self.fail(repr(err))
+        else:
+            pass
+
+    def test_get_session_json(self):
+        req = webapi.build_request(
+            'sessions/test',
+            'GET',
+            content_type='application/json',
+            token=self.token
+        )
+
+        try:
+            response = request.urlopen(req)
+            f = json.loads(response.read())
+            if ('data' in f and
+                    'meta' in f and
+                    'notes' in f):
                 pass
             else:
                 self.fail('ZIP file incomplete')
@@ -142,7 +180,9 @@ def suite():
 
     s.addTest(TestSessions('test_start_session'))
     s.addTest(TestSessions('test_session_data'))
+    s.addTest(TestSessions('test_session_note'))
     s.addTest(TestSessions('test_stop_session'))
-    s.addTest(TestSessions('test_get_session'))
+    s.addTest(TestSessions('test_get_session_zip'))
+    s.addTest(TestSessions('test_get_session_json'))
 
     return s

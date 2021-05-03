@@ -21,8 +21,7 @@ import os
 from src.plugins import db
 from time import time
 import json
-import zipfile
-from src.helpers import config
+from src.helpers import config, zip
 import weakref
 import functools
 
@@ -50,6 +49,8 @@ class Session:
         self._meta = None
         self._tab = Sessions()
         self._status = None
+        self._data = None
+        self._notes = None
 
     @property
     def name(self):
@@ -103,6 +104,40 @@ class Session:
 
         return self._status
 
+    @property
+    def data(self):
+        if self._data is None:
+            self._data = {}
+
+            for sensor in self.sensors:
+                self._data[sensor] = []
+                with open(f'{self._location}/{self._name}/data/{sensor}.csv', 'r', newline='') as f:
+                    fieldnames = ['epoch', 'value']
+                    reader = csv.DictReader(f, fieldnames=fieldnames)
+                    rows = iter(reader)
+
+                    next(rows)
+                    for row in rows:
+                        self._data[sensor].append({'epoch': row['epoch'], 'value': row['value']})
+
+        return self._data
+
+    @property
+    def notes(self):
+        if self._notes is None:
+            self._notes = []
+
+            with open(f'{self._location}/{self._name}/notes.csv', 'r', newline='') as f:
+                fieldnames = ['epoch', 'note']
+                reader = csv.DictReader(f, fieldnames=fieldnames)
+                rows = iter(reader)
+
+                next(rows)
+                for row in rows:
+                    self._notes.append({'epoch': row['epoch'], 'note': row['note']})
+
+        return self._notes
+
     def create(self, sensors, meta):
         if not self.is_exists:
             self._sensors = sensors
@@ -124,13 +159,15 @@ class Session:
                 json.dump(self._meta, f, indent=4, sort_keys=True)
 
             with open(f'{self._location}/{self._name}/notes.csv', 'w', newline='') as f:
-                fieldnames = ['epoch', 'note']
+                fieldnames = ['id, epoch', 'note']
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
                 writer.writeheader()
 
+            os.mkdir(f'{self._location}/{self._name}/data')
+
             for sensor in self._sensors:
-                with open(f'{self._location}/{self._name}/{sensor}.csv', 'w', newline='') as f:
-                    fieldnames = ['epoch', 'value']
+                with open(f'{self._location}/{self._name}/data/{sensor}.csv', 'w', newline='') as f:
+                    fieldnames = ['id, epoch', 'value']
                     writer = csv.DictWriter(f, fieldnames=fieldnames)
                     writer.writeheader()
         else:
@@ -143,7 +180,7 @@ class Session:
     def add_sensor_data(self, sensor, data):
         rows = list(map(lambda entry: {'epoch': entry['epoch'], 'value': entry['value']}, data))
 
-        with open(f'{self._location}/{self._name}/{sensor}.csv', 'a', newline='') as f:
+        with open(f'{self._location}/{self._name}/data/{sensor}.csv', 'a', newline='') as f:
             fieldnames = ['epoch', 'value']
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writerows(rows)
@@ -151,15 +188,9 @@ class Session:
     def _zip_session(self):
         if os.path.exists(f'{self._location}/{self._name}'):
             try:
-                f_zip = zipfile.ZipFile(f'{self._location}/{self._name}/{self._name}.zip', 'x')
+                zip.zip_folder(f'{self._location}/{self._name}', f'{self._location}/{self._name}/{self._name}.zip')
             except FileExistsError:
                 print(f'{self._name}.zip already exists')
-            else:
-                for entry in os.listdir(f'{self._location}/{self._name}'):
-                    if 'zip' not in entry:
-                        f_zip.write(f'{self._location}/{self._name}/{entry}', f'{entry}')
-
-                f_zip.close()
 
     @property
     def zip_path(self):
@@ -168,9 +199,16 @@ class Session:
 
         return f'{self._location}/{self._name}/{self._name}.zip'
 
+    def add_note(self, note):
+        with open(f'{self._location}/{self._name}/notes.csv', 'a', newline='') as f:
+            fieldnames = ['epoch', 'note']
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writerow({'epoch': time(), 'note': note})
+
     def stop(self):
+        self._status = 'dead'
         sql = f'UPDATE {self._tab.name} SET status = ? WHERE name = ?'
-        self._tab.execute(sql, ('dead', self._name, ))
+        self._tab.execute(sql, (self._status, self._name, ))
 
 
 class SessionsManager:
@@ -211,34 +249,33 @@ class SessionsManager:
         self._mounted_session = self._sessions_proxy[session]
 
     def cleanup_mount(self):
-        if self._sessions[-1].status is None:
-            self._sessions.pop(-1)
+        if _manager.mounted_session and _manager.mounted_session.status is None:
+            session = self._sessions.pop(-1)
+            del self._sessions_proxy[session.name]
 
     def add_sensors_data(self, data):
-        for session in self:
+        for session in self.alive_sessions:
             wanted = list(filter(lambda s: s in session.sensors, list(data.keys())))
 
             for sensor, values in data.items():
                 if sensor in wanted:
                     session.add_sensor_data(sensor, values)
 
-    def __iter__(self):
-        self.n = 0
-        return self
+    @property
+    def alive_sessions(self):
+        return iter(list(filter(lambda s: s.status == 'alive', self._sessions)))
 
-    def __next__(self):
-        if self.n < len(self._sessions):
-            result = self._sessions[self.n]
-            self.n += 1
-            return result
-        else:
-            raise StopIteration
+    def __iter__(self):
+        return iter(self._sessions)
 
     def __contains__(self, session):
         return session in self._sessions_proxy
 
 
 _manager = SessionsManager()
+
+add_sensors_data = _manager.add_sensors_data
+prepare_session = _manager.prepare_mount
 
 
 def get_mounted_session():
@@ -254,19 +291,11 @@ def load():
     _manager.set_location(location)
 
 
-def prepare_session(name):
-    _manager.prepare_mount(name)
-
-
-def add_sensors_data(data):
-    _manager.add_sensors_data(data)
-
-
 def requires_session():
     def wrapper(func):
         @functools.wraps(func)
         def decorator(*args, **kwargs):
-            if _manager.mounted_session.name is not None and _manager.mounted_session.is_exists:
+            if _manager.mounted_session and _manager.mounted_session.is_exists:
                 result = func(*args, **kwargs)
             else:
                 result = 'Sessions does not exist', 404

@@ -75,7 +75,7 @@ class TestBasicAccount(BaseAccountTests):
 
     def test_start_session(self):
         req = webapi.build_request(
-            'sessions/test',
+            'sessions/basic',
             'POST',
             data={'sensors': ['rpm', 'water_temp_c'],
                   'meta': {
@@ -94,7 +94,7 @@ class TestBasicAccount(BaseAccountTests):
 
     def test_stop_session(self):
         req = webapi.build_request(
-            'sessions/test',
+            'sessions/basic',
             'PATCH',
             data={'status': 'dead'},
             content_type='application/json',
@@ -111,7 +111,7 @@ class TestBasicAccount(BaseAccountTests):
     def test_get_session(self):
 
         req = webapi.build_request(
-            'sessions/test',
+            'sessions/basic',
             'GET',
             token=self.token
         )

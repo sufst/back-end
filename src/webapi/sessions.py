@@ -24,22 +24,46 @@ import json
 def _on_sessions_get():
     session = sessions.get_mounted_session()
 
-    try:
-        with open(session.zip_path, 'rb') as f:
-            c = f.read()
-            rsp = webapi.Response(c)
-            rsp.headers['Content-Type'] = 'application/zip'
-            rsp.headers['Content-Disposition'] = f'attachment; filename="{session.name}.zip"'
-            rsp.headers['Content-Length'] = len(c)
+    content_type = webapi.request.headers.get('Content-Type')
 
-        return rsp
-    except FileNotFoundError as err:
-        return repr(err), 404
+    if content_type == 'application/zip':
+        try:
+            with open(session.zip_path, 'rb') as f:
+                c = f.read()
+                rsp = webapi.Response(c)
+                rsp.headers['Content-Type'] = 'application/zip'
+                rsp.headers['Content-Disposition'] = f'attachment; filename="{session.name}.zip"'
+                rsp.headers['Content-Length'] = len(c)
+
+            return rsp
+        except FileNotFoundError as err:
+            return repr(err), 404
+    elif content_type == 'application/json':
+        try:
+            d = {
+                'meta': session.meta,
+                'notes': session.notes,
+                'data': session.data
+            }
+            rsp = webapi.Response(json.dumps(d))
+            rsp.headers['Content-Type'] = 'application/json'
+
+            return rsp
+        except Exception as err:
+            return repr(err), 500
+    else:
+        return 'Invalid Content-Type', 400
 
 
 @privileges.privilege_required(privileges.basic)
 def _on_sessions_post():
     data = webapi.request.get_json()
+
+    if 'sensors' not in data:
+        return 'Sensors not in request', 400
+
+    if 'meta' not in data:
+        return 'Meta not in request', 400
 
     sensors = data['sensors']
     meta = data['meta']
@@ -69,21 +93,27 @@ def _on_sessions_patch():
         return 'No valid key to patch', 400
 
 
-# @privileges.privilege_required(privileges.basic)
-# @sessions.requires_session()
-# def _on_sessions_put():
-#     data = webapi.request.get_json()
-#
-#     if 'note' in data:
-#
+@privileges.privilege_required(privileges.basic)
+@sessions.requires_session()
+def _on_sessions_put():
+    data = webapi.request.get_json()
+
+    session = sessions.get_mounted_session()
+
+    if 'note' in data:
+        session.add_note(data['note'])
+        return '', 200
+    else:
+        return 'No valid key to put', 400
 
 
-@webapi.endpoint('/sessions/<name>', methods=['GET', 'POST', 'PATCH'])
+@webapi.endpoint('/sessions/<name>', methods=['GET', 'POST', 'PATCH', 'PUT'])
 def _sessions(name):
     sessions.prepare_session(name)
 
     return webapi.route({
-        'GET': _on_sessions_get,
-        'POST': _on_sessions_post,
-        'PATCH': _on_sessions_patch
+        'GET': lambda: _on_sessions_get(),
+        'POST': lambda: _on_sessions_post(),
+        'PATCH': lambda: _on_sessions_patch(),
+        'PUT': lambda: _on_sessions_put()
     })

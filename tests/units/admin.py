@@ -75,7 +75,7 @@ class TestAdminAccount(BaseAccountTests):
 
     def test_start_session(self):
         req = webapi.build_request(
-            'sessions/test',
+            'sessions/admin',
             'POST',
             data={'sensors': ['rpm', 'water_temp_c'],
                   'meta': {
@@ -94,7 +94,7 @@ class TestAdminAccount(BaseAccountTests):
 
     def test_stop_session(self):
         req = webapi.build_request(
-            'sessions/test',
+            'sessions/admin',
             'PATCH',
             data={'status': 'dead'},
             content_type='application/json',
@@ -111,7 +111,7 @@ class TestAdminAccount(BaseAccountTests):
     def test_get_session(self):
 
         req = webapi.build_request(
-            'sessions/test',
+            'sessions/admin',
             'GET',
             token=self.token
         )
@@ -132,8 +132,8 @@ class TestAdminAccount(BaseAccountTests):
 
 class TestAdminAccountSocketIO(BaseAccountSocketIoTest):
     def setUp(self):
-        self.username = 'anonymous'
-        self.password = 'anonymous'
+        self.username = 'admin'
+        self.password = 'password'
 
         super(TestAdminAccountSocketIO, self).setUp()
 

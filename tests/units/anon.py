@@ -63,22 +63,9 @@ class TestAnonAccount(BaseAccountTests):
         else:
             self.fail()
 
-    def test_get_session(self):
-        req = webapi.build_request(
-            'sessions/test',
-            'GET'
-        )
-
-        try:
-            request.urlopen(req)
-        except error.HTTPError as err:
-            self.assertTrue(err.code != 401)
-        else:
-            pass
-
     def test_start_session(self):
         req = webapi.build_request(
-            'sessions/test',
+            'sessions/anon',
             'POST',
             data={'sensors': ['rpm', 'water_temp_c'],
                   'meta': {
@@ -96,7 +83,7 @@ class TestAnonAccount(BaseAccountTests):
 
     def test_stop_session(self):
         req = webapi.build_request(
-            'sessions/test',
+            'sessions/anon',
             'PATCH',
             data={'status': 'dead'},
             content_type='application/json'
@@ -106,6 +93,19 @@ class TestAnonAccount(BaseAccountTests):
             request.urlopen(req)
         except error.HTTPError as err:
             self.assertTrue(err.code == 401)
+        else:
+            pass
+
+    def test_get_session(self):
+        req = webapi.build_request(
+            'sessions/anon',
+            'GET'
+        )
+
+        try:
+            request.urlopen(req)
+        except error.HTTPError as err:
+            self.assertTrue(err.code != 401)
         else:
             pass
 
