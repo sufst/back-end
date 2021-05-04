@@ -15,12 +15,12 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from tests.helpers.unittests import unittest
+import unittest
 from tests.helpers import config, sessions
 import os
 import importlib
 from tests.plugins import db
-from src import main
+import server
 from multiprocessing import Process
 
 
@@ -50,7 +50,7 @@ def run():
     db.clean_db()
     sessions.clean_sessions()
 
-    pro = Process(target=main.run, args=('tests/config_test.ini',))
+    pro = Process(target=server.run, args=('tests/config_test.ini',))
     pro.start()
 
     for f in os.listdir('./tests/plugins'):

@@ -48,4 +48,4 @@ if __name__ == '__main__':
           "This program comes with ABSOLUTELY NO WARRANTY;\n" +
           "This is free software, and you are welcome to redistribute it")
 
-    run('src/config.ini')
+    run('config.ini')
