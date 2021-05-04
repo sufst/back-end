@@ -15,26 +15,16 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from src.plugins import sio
+from src.plugins import sio, plugins_load, plugins_run
 from src.helpers import config
-import os
-import importlib
 
 
 def run(conf):
     config.set_config(conf)
 
-    for f in os.listdir('./src/plugins'):
-        if f not in '__init__':
-            module = importlib.import_module(f'src.plugins.{f.split(".")[0]}')
-            if hasattr(module, 'load'):
-                module.load()
+    plugins_load()
 
-    for f in os.listdir('./src/plugins'):
-        if f not in '__init__':
-            module = importlib.import_module(f'src.plugins.{f.split(".")[0]}')
-            if hasattr(module, 'run'):
-                module.run()
+    plugins_run()
 
     sio.run()
 
