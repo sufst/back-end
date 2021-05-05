@@ -20,7 +20,7 @@ from src.helpers import privileges
 import json
 
 
-def _on_sessions_get_zip():
+def _on_sessions_get_zip() -> str or tuple:
     session = webapi.request.current_session
 
     try:
@@ -36,7 +36,7 @@ def _on_sessions_get_zip():
         return repr(err), 404
 
 
-def _on_session_get_json():
+def _on_session_get_json() -> str or tuple:
     session = webapi.request.current_session
 
     try:
@@ -54,7 +54,7 @@ def _on_session_get_json():
 
 
 @sessions.requires_session()
-def _on_sessions_get():
+def _on_sessions_get() -> str or tuple:
     content_type = webapi.request.headers.get('Content-Type')
 
     handlers = {
@@ -71,7 +71,7 @@ def _on_sessions_get():
 
 
 @privileges.privilege_required(privileges.basic)
-def _on_sessions_post():
+def _on_sessions_post() -> str or tuple:
     data = webapi.request.get_json()
 
     fields = [
@@ -95,7 +95,7 @@ def _on_sessions_post():
         return json.dumps({'status': session.status}), 200
 
 
-def _on_sessions_patch_status(status):
+def _on_sessions_patch_status(status: str) -> None:
     session = webapi.request.current_session
 
     if status == 'dead':
@@ -104,7 +104,7 @@ def _on_sessions_patch_status(status):
 
 @privileges.privilege_required(privileges.basic)
 @sessions.requires_session()
-def _on_sessions_patch():
+def _on_sessions_patch() -> str or tuple:
     data = webapi.request.get_json()
 
     handlers = {
@@ -123,7 +123,7 @@ def _on_sessions_patch():
     return '', 200
 
 
-def _on_sessions_put_note(note):
+def _on_sessions_put_note(note: str) -> None:
     session = webapi.request.current_session
 
     session.add_note(note)
@@ -131,7 +131,7 @@ def _on_sessions_put_note(note):
 
 @privileges.privilege_required(privileges.basic)
 @sessions.requires_session()
-def _on_sessions_put():
+def _on_sessions_put() -> str or tuple:
     data = webapi.request.get_json()
 
     handlers = {
@@ -151,7 +151,7 @@ def _on_sessions_put():
 
 
 @webapi.endpoint('/sessions/<name>', methods=['GET', 'POST', 'PATCH', 'PUT'])
-def _sessions(name):
+def _sessions(name: str) -> str or tuple:
     sessions.prepare_request(name)
 
     return webapi.route({

@@ -20,42 +20,42 @@ from src.plugins import webapi
 
 
 class _Privilege:
-    def __str__(self):
+    def __str__(self) -> str:
         raise NotImplementedError
 
-    def __int__(self):
+    def __int__(self) -> int:
         raise NotImplementedError
 
 
 class _PrivilegeAnon(_Privilege):
-    def __str__(self):
+    def __str__(self) -> str:
         return 'Anon'
 
-    def __int__(self):
+    def __int__(self) -> int:
         return 0
 
 
 class _PrivilegeBasic(_Privilege):
-    def __str__(self):
+    def __str__(self) -> str:
         return 'Basic'
 
-    def __int__(self):
+    def __int__(self) -> int:
         return 1
 
 
 class _PrivilegeAdmin(_Privilege):
-    def __str__(self):
+    def __str__(self) -> str:
         return 'Admin'
 
-    def __int__(self):
+    def __int__(self) -> int:
         return 2
 
 
 class _PrivilegeDeveloper(_Privilege):
-    def __str__(self):
+    def __str__(self) -> str:
         return 'Developer'
 
-    def __int__(self):
+    def __int__(self) -> int:
         return 3
 
 
@@ -68,25 +68,25 @@ _level = {int(anon): anon, int(basic): basic, int(admin): admin, int(developer):
 _strings = {str(anon): anon, str(basic): basic, str(admin): admin, str(developer): developer}
 
 
-def from_level(level):
+def from_level(level: int) -> _Privilege:
     if level in _level:
         return _level[level]
     else:
         raise Exception('Invalid privilege level')
 
 
-def from_string(string):
+def from_string(string: str) -> _Privilege:
     if string in _strings:
         return _strings[string]
     else:
         raise Exception('Invalid privilege string')
 
 
-def privilege_required(privilege):
-    def decorator(func):
+def privilege_required(privilege: _Privilege) -> callable:
+    def decorator(func: callable) -> callable:
         @functools.wraps(func)
         @webapi.jwt_required()
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs) -> tuple:
             user = webapi.current_user
 
             if int(user.privilege) >= int(privilege):

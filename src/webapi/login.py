@@ -19,7 +19,7 @@ from src.plugins import users, webapi
 import json
 
 
-def _on_login_post():
+def _on_login_post() -> str or tuple:
     data = webapi.request.get_json()
 
     fields = [
@@ -41,7 +41,7 @@ def _on_login_post():
 
 
 @webapi.endpoint('/login/<user>', methods=['POST'])
-def login(user):
+def login(user: str) -> str or tuple:
     users.prepare_request(user)
 
     return webapi.route({

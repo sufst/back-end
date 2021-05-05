@@ -35,11 +35,11 @@ class Table:
                 ) """
         self.execute(sql)
 
-    def execute(self, *args, **kwargs):
+    def execute(self, *args, **kwargs) -> tuple:
         return self._cur.execute(*args, **kwargs)
 
     @classmethod
-    def set_cursor(cls, cur):
+    def set_cursor(cls, cur: Sqlite3Worker) -> None:
         cls._cur = cur
 
 
@@ -47,7 +47,7 @@ class StageTable(Table):
     pass
 
 
-def load():
+def load() -> None:
     f_db = config.get_config('database')['Location']
     f_stage_db = config.get_config('database')['StageLocation']
 
