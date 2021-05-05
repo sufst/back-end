@@ -27,5 +27,5 @@ add_job = _scheduler.add_job
 schedule_job = _scheduler.scheduled_job
 
 
-def load():
+def load() -> None:
     _scheduler.start()

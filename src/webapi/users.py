@@ -20,7 +20,7 @@ from src.helpers import privileges
 import json
 
 
-def _on_users_post():
+def _on_users_post() -> str or tuple:
     data = webapi.request.get_json()
 
     fields = [
@@ -45,7 +45,7 @@ def _on_users_post():
         return str(error), 409
 
 
-def _on_users_get():
+def _on_users_get() -> str or tuple:
     u = webapi.request.wanted_user
 
     if u is not None:
@@ -62,28 +62,28 @@ def _on_users_get():
         return None, 404
 
 
-def _on_users_patch_username(new):
+def _on_users_patch_username(new: str) -> None:
     u = webapi.request.wanted_user
     u.update_username(new)
 
 
-def _on_users_patch_password(new):
+def _on_users_patch_password(new: str) -> None:
     u = webapi.request.wanted_user
     u.update_password(new)
 
 
-def _on_users_patch_meta(new):
+def _on_users_patch_meta(new: str) -> None:
     k, v = new
     u = webapi.request.wanted_user
     u.update_meta(k, v)
 
 
-def _on_users_patch_privilege(new):
+def _on_users_patch_privilege(new: str) -> None:
     u = webapi.request.wanted_user
     u.update_privilege(new)
 
 
-def _on_users_patch():
+def _on_users_patch() -> str or tuple:
     data = webapi.request.get_json()
 
     handlers = {
@@ -109,7 +109,7 @@ def _on_users_patch():
 
 @webapi.endpoint('/users/<user>', methods=['POST', 'GET', 'PATCH'])
 @privileges.privilege_required(privileges.admin)
-def _users(user):
+def _users(user: str) -> str or tuple:
     users.prepare_request(user)
 
     return webapi.route({

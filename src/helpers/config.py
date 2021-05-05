@@ -20,9 +20,9 @@ import configparser
 _config = configparser.ConfigParser()
 
 
-def set_config(conf_file):
+def set_config(conf_file: str) -> None:
     _config.read(conf_file)
 
 
-def get_config(section):
+def get_config(section: str) -> configparser.SectionProxy:
     return _config[section]

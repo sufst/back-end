@@ -19,7 +19,7 @@ import os
 import zipfile
 
 
-def zip_folder(src, dst):
+def zip_folder(src: str, dst: str) -> None:
     f_zip = zipfile.ZipFile(dst, 'x')
 
     _zip_dir(src, f_zip)
@@ -27,7 +27,7 @@ def zip_folder(src, dst):
     f_zip.close()
 
 
-def _zip_dir(path, zip_h):
+def _zip_dir(path: str, zip_h: zipfile.ZipFile):
     # https://stackoverflow.com/questions/1855095/how-to-create-a-zip-archive-of-a-directory-in-python
     for root, dirs, files in os.walk(path):
         for file in files:

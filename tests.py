@@ -24,7 +24,7 @@ import server
 from multiprocessing import Process
 
 
-def run_all_units():
+def run_all_units() -> None:
     runner = unittest.TextTestRunner()
 
     for f in os.listdir('./tests/units'):
@@ -35,7 +35,7 @@ def run_all_units():
                 runner.run(module.suite())
 
 
-def run_unit(unit):
+def run_unit(unit: str) -> None:
     runner = unittest.TextTestRunner()
 
     module = importlib.import_module(f'tests.units.{unit}')
@@ -44,7 +44,7 @@ def run_unit(unit):
         runner.run(module.suite())
 
 
-def run():
+def run() -> None:
     config.set_config('tests/config_test.ini')
 
     db.clean_db()

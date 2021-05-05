@@ -19,7 +19,7 @@ from src.plugins import sio, plugins_load, plugins_run
 from src.helpers import config
 
 
-def run(conf):
+def run(conf: str) -> None:
     config.set_config(conf)
 
     plugins_load()
@@ -29,7 +29,7 @@ def run(conf):
     sio.run()
 
 
-def stop():
+def stop() -> None:
     sio.stop()
 
 

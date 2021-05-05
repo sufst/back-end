@@ -43,7 +43,7 @@ class SessionNotFoundError(Exception):
 class Session:
     _location = ''
 
-    def __init__(self, name=None):
+    def __init__(self, name: str = None):
         self._name = name
         self._sensors = None
         self._meta = None
@@ -53,11 +53,11 @@ class Session:
         self._notes = None
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
     @property
-    def sensors(self):
+    def sensors(self) -> dict:
         if self._sensors is None:
             sql = f'SELECT sensors FROM {self._tab.name} WHERE name = ?'
             result = self._tab.execute(sql, (self._name,))
@@ -68,7 +68,7 @@ class Session:
         return self._sensors
 
     @property
-    def meta(self):
+    def meta(self) -> str:
         if self._meta is None:
             with open(f'{self._location}/{self._name}/meta.json', 'r') as f:
                 self._meta = json.load(f)
@@ -76,7 +76,7 @@ class Session:
         return self._meta
 
     @property
-    def is_exists(self):
+    def is_exists(self) -> bool:
         if self._name is not None:
             sql = f'SELECT name FROM {self._tab.name} WHERE name = ?'
             results = self._tab.execute(sql, (self._name,))
@@ -94,7 +94,7 @@ class Session:
             return False
 
     @property
-    def status(self):
+    def status(self) -> str:
         if self._status is None:
             sql = f'SELECT status FROM {self._tab.name} WHERE name = ?'
             result = self._tab.execute(sql, (self._name,))
@@ -105,7 +105,7 @@ class Session:
         return self._status
 
     @property
-    def data(self):
+    def data(self) -> dict:
         if self._data is None:
             self._data = {}
 
@@ -123,7 +123,7 @@ class Session:
         return self._data
 
     @property
-    def notes(self):
+    def notes(self) -> list:
         if self._notes is None:
             self._notes = []
 
@@ -138,7 +138,7 @@ class Session:
 
         return self._notes
 
-    def create(self, sensors, meta):
+    def create(self, sensors: list, meta: dict) -> None:
         if not self.is_exists:
             self._sensors = sensors
             self._meta = meta
@@ -174,10 +174,10 @@ class Session:
             raise KeyError('Session already exists')
 
     @classmethod
-    def set_location(cls, location):
+    def set_location(cls, location: str) -> None:
         cls._location = location
 
-    def add_sensor_data(self, sensor, data):
+    def add_sensor_data(self, sensor: str, data: list) -> None:
         rows = list(map(lambda entry: {'epoch': entry['epoch'], 'value': entry['value']}, data))
 
         with open(f'{self._location}/{self._name}/data/{sensor}.csv', 'a', newline='') as f:
@@ -185,7 +185,7 @@ class Session:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writerows(rows)
 
-    def _zip_session(self):
+    def _zip_session(self) -> None:
         if os.path.exists(f'{self._location}/{self._name}'):
             try:
                 zip.zip_folder(f'{self._location}/{self._name}', f'{self._location}/{self._name}/{self._name}.zip')
@@ -193,19 +193,19 @@ class Session:
                 print(f'{self._name}.zip already exists')
 
     @property
-    def zip_path(self):
+    def zip_path(self) -> str:
         if not os.path.exists(f'{self._location}/{self._name}/{self._name}.zip'):
             self._zip_session()
 
         return f'{self._location}/{self._name}/{self._name}.zip'
 
-    def add_note(self, note):
+    def add_note(self, note: str) -> None:
         with open(f'{self._location}/{self._name}/notes.csv', 'a', newline='') as f:
             fieldnames = ['epoch', 'note']
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writerow({'epoch': time(), 'note': note})
 
-    def stop(self):
+    def stop(self) -> None:
         self._status = 'dead'
         sql = f'UPDATE {self._tab.name} SET status = ? WHERE name = ?'
         self._tab.execute(sql, (self._status, self._name, ))
@@ -224,7 +224,7 @@ class SessionsManager:
 
         self._load_sessions()
 
-    def _load_sessions(self):
+    def _load_sessions(self) -> None:
         sql = f'SELECT name FROM {self._tab.name}'
         results = self._tab.execute(sql)
 
@@ -233,27 +233,27 @@ class SessionsManager:
             self._sessions_proxy[name] = weakref.proxy(self._sessions[-1])
 
     @classmethod
-    def set_location(cls, location):
+    def set_location(cls, location: str) -> None:
         Session.set_location(location)
         cls._location = location
 
     @property
-    def mounted_session(self):
+    def mounted_session(self) -> Session:
         return self._mounted_session
 
-    def prepare_webapi_request(self, session):
+    def prepare_webapi_request(self, session: str) -> None:
         if session not in self:
             self._sessions.append(Session(session))
             self._sessions_proxy[session] = weakref.proxy(self._sessions[-1])
 
         setattr(webapi.request, 'current_session', self._sessions_proxy[session])
 
-    def cleanup_webapi_request(self):
+    def cleanup_webapi_request(self) -> None:
         if webapi.request.current_session and webapi.request.current_session.status is None:
             session = self._sessions.pop(self._sessions.index(webapi.request.current_session))
             del self._sessions_proxy[session.name]
 
-    def add_sensors_data(self, data):
+    def add_sensors_data(self, data: dict) -> None:
         for session in self.alive_sessions:
             wanted = list(filter(lambda s: s in session.sensors, list(data.keys())))
 
@@ -262,13 +262,13 @@ class SessionsManager:
                     session.add_sensor_data(sensor, values)
 
     @property
-    def alive_sessions(self):
+    def alive_sessions(self) -> iter:
         return iter(list(filter(lambda s: s.status == 'alive', self._sessions)))
 
-    def __iter__(self):
+    def __iter__(self) -> iter:
         return iter(self._sessions)
 
-    def __contains__(self, session):
+    def __contains__(self, session: str) -> bool:
         return session in self._sessions_proxy
 
 
@@ -278,7 +278,7 @@ add_sensors_data = _manager.add_sensors_data
 prepare_request = _manager.prepare_webapi_request
 
 
-def load():
+def load() -> None:
     location = config.get_config('sessions')['Location']
 
     if not os.path.exists(f'{location}/'):
@@ -287,8 +287,8 @@ def load():
     _manager.set_location(location)
 
 
-def requires_session():
-    def wrapper(func):
+def requires_session() -> callable:
+    def wrapper(func) -> callable:
         @functools.wraps(func)
         def decorator(*args, **kwargs):
             if webapi.request.current_session and webapi.request.current_session.is_exists:

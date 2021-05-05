@@ -37,13 +37,13 @@ create_access_token = flask_jwt_extended.create_access_token
 Response = flask.Response
 
 
-def load():
+def load() -> None:
     for f in os.listdir('./src/webapi'):
         if f not in '__init__':
             importlib.import_module(f'src.webapi.{f.split(".")[0]}')
 
 
-def route(handlers, *args, **kwargs):
+def route(handlers: dict, *args, **kwargs) -> tuple:
     method = flask.request.method
 
     if method in handlers:

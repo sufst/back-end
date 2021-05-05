@@ -42,18 +42,18 @@ class Stage(db.StageTable):
 sio = flask_socketio.SocketIO(cors_allowed_origins="*", manage_session=False)
 
 
-def run():
+def run() -> None:
     host = config.get_config('server')['Host']
     port = config.get_config('server').getint('Port')
 
     sio.run(webapi.app, host=host, port=port)
 
 
-def stop():
+def stop() -> None:
     sio.stop()
 
 
-def load():
+def load() -> None:
     sio.init_app(webapi.app)
 
     for f in os.listdir('./src/namespaces'):
@@ -64,7 +64,7 @@ def load():
         seconds=config.get_config('sio').getfloat('EmitInterval')))
 
 
-def _car_data_emit():
+def _car_data_emit() -> None:
     tab = Stage()
 
     sql = f'SELECT id, data FROM {tab.name} ORDER BY id ASC'

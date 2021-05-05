@@ -39,7 +39,7 @@ class Users(db.Table):
 class User:
     _tab = Users()
 
-    def __init__(self, username=None, uid=None, privilege=None):
+    def __init__(self, username: str = None, uid: int = None, privilege: str = None):
         self.uid = uid
         self.username = username
         self.key = None
@@ -48,12 +48,12 @@ class User:
         self.creation = None
         self.privilege = privilege
 
-    def update_username(self, new):
+    def update_username(self, new: str) -> None:
         sql = f'UPDATE {self._tab.name} SET username = ? WHERE id = ?'
         self._tab.execute(sql, (new, self.uid))
         self.username = new
 
-    def update_password(self, new):
+    def update_password(self, new: str) -> None:
         salt = os.urandom(16)
         key = hashlib.pbkdf2_hmac("sha256", new.encode("utf-8"), salt, 100000)
 
@@ -65,17 +65,17 @@ class User:
         self._tab.execute(sql, (new, self.uid))
         self.key = key
 
-    def update_meta(self, key, value):
+    def update_meta(self, key: str, value: any) -> None:
         self.meta.update({key, value})
         sql = f'UPDATE {self._tab.name} SET meta = ? WHERE id = ?'
         self._tab.execute(sql, (self.meta, self.uid))
 
-    def update_privilege(self, new):
+    def update_privilege(self, new: str) -> None:
         sql = f'UPDATE {self._tab.name} SET privilege = ? WHERE id = ?'
         self._tab.execute(sql, (int(privileges.from_string(new)), self.uid))
         self.privilege = new
 
-    def _from_sql(self, sql, args):
+    def _from_sql(self, sql: str, args: tuple) -> object:
         results = self._tab.execute(sql, args)
         if results:
             uid, username, key, salt, creation, privilege, meta = results[0]
@@ -91,15 +91,15 @@ class User:
 
         return self
 
-    def from_uid(self, uid):
+    def from_uid(self, uid: int) -> object:
         sql = f'SELECT id, username, key, salt, creation, privilege, meta FROM {self._tab.name} WHERE id = ?'
         return self._from_sql(sql, (uid,))
 
-    def from_username(self):
+    def from_username(self) -> object:
         sql = f'SELECT id, username, key, salt, creation, privilege, meta FROM {self._tab.name} WHERE username = ?'
         return self._from_sql(sql, (self.username,))
 
-    def create(self, password, privilege, meta):
+    def create(self, password: str, privilege: str, meta: dict) -> None:
         sql = f'SELECT id FROM {self._tab.name} WHERE username = ?'
         results = self._tab.execute(sql, (self.username,))
 
@@ -124,7 +124,7 @@ class User:
             self.privilege = privilege
             self.meta = meta
 
-    def auth(self, password):
+    def auth(self, password: str) -> str:
         if self.username == 'anonymous':
             return webapi.create_access_token(identity=0, expires_delta=False)
         else:
@@ -144,11 +144,11 @@ class UsersManager:
         self._tab = Users()
 
     @staticmethod
-    def prepare_webapi_request(username):
+    def prepare_webapi_request(username: str) -> None:
         setattr(webapi.request, 'wanted_user', User(username=username).from_username())
 
     @staticmethod
-    def lookup_loader(_, payload):
+    def lookup_loader(_: dict, payload: dict) -> User:
         uid = payload["sub"]
 
         if uid == 0:
@@ -164,11 +164,11 @@ _manager = UsersManager()
 prepare_request = _manager.prepare_webapi_request
 
 
-def create_user(username, password, privilege, meta):
+def create_user(username: str, password: str, privilege: str, meta: dict) -> None:
     User(username).create(password, privilege, meta)
 
 
-def load():
+def load() -> None:
     try:
         create_user('intermediate_server', 'sufst', 'Basic', {})
         create_user('anonymous', 'anonymous', 'Anon', {})

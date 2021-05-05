@@ -24,7 +24,7 @@ import pickle
 
 @sio.sio.on('connect', '/car')
 @privileges.privilege_required(privileges.anon)
-def on_connect():
+def on_connect() -> None:
     tab = sio.Meta()
 
     sql = f'SELECT meta FROM {tab.name} ORDER BY id DESC LIMIT 1'
@@ -38,13 +38,13 @@ def on_connect():
 
 @sio.sio.on('disconnect', '/car')
 @privileges.privilege_required(privileges.anon)
-def on_disconnect():
+def on_disconnect() -> None:
     user = webapi.current_user
 
 
 @sio.sio.on('meta', '/car')
 @privileges.privilege_required(privileges.anon)
-def on_meta(meta):
+def on_meta(meta: str) -> None:
     tab = sio.Meta()
 
     sql = f'INSERT INTO {tab.name} (creation, meta) VALUES (?,?)'
@@ -55,7 +55,7 @@ def on_meta(meta):
 
 @sio.sio.on('data', '/car')
 @privileges.privilege_required(privileges.anon)
-def on_data(data):
+def on_data(data: str) -> None:
     tab = sio.Stage()
 
     data = json.loads(data)

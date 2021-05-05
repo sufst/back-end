@@ -21,7 +21,7 @@ import json
 
 
 @privileges.privilege_required(privileges.basic)
-def _on_user_get():
+def _on_user_get() -> str or tuple:
     u = webapi.current_user
 
     if u is not None:
@@ -38,30 +38,30 @@ def _on_user_get():
         return None, 404
 
 
-def _on_user_patch_username(new):
+def _on_user_patch_username(new: str) -> None:
     u = webapi.current_user
     u.update_username(new)
 
 
-def _on_user_patch_password(new):
+def _on_user_patch_password(new: str) -> None:
     u = webapi.current_user
     u.update_password(new)
 
 
-def _on_user_patch_meta(new):
+def _on_user_patch_meta(new: str) -> None:
     k, v = new
     u = webapi.current_user
     u.update_meta(k, v)
 
 
 @privileges.privilege_required(privileges.admin)
-def _on_user_patch_privilege(new):
+def _on_user_patch_privilege(new: str) -> None:
     u = webapi.current_user
     u.update_privilege(new)
 
 
 @privileges.privilege_required(privileges.basic)
-def _on_user_patch():
+def _on_user_patch() -> str or tuple:
     data = webapi.request.get_json()
 
     handlers = {
@@ -86,7 +86,7 @@ def _on_user_patch():
 
 
 @webapi.endpoint('/user', methods=['GET', 'PATCH'])
-def user():
+def user() -> str or tuple:
     return webapi.route({
         'GET': lambda: _on_user_get(),
         'PATCH': lambda: _on_user_patch()
