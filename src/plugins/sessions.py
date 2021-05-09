@@ -22,7 +22,6 @@ from src.plugins import db, webapi
 from time import time
 import json
 from src.helpers import config, zip
-import weakref
 import functools
 
 
@@ -43,12 +42,27 @@ class SessionNotFoundError(Exception):
 class Session:
     _location = ''
 
-    def __init__(self, name: str = None):
+    def __init__(self, name: str = None, from_sql: bool = False):
         self._name = name
-        self._sensors = None
+
+        if from_sql:
+            self._tab = Sessions()
+
+            sql = f'SELECT status, sensors FROM {self._tab.name} WHERE name = ?'
+            results = self._tab.execute(sql, (name,))
+
+            if results:
+                self._status, j_sensors = results[0]
+                self._sensors = json.loads(j_sensors)
+            else:
+                self._status = None
+                self._sensors = None
+        else:
+            self._status = None
+            self._sensors = None
+            self._tab = Sessions()
+
         self._meta = None
-        self._tab = Sessions()
-        self._status = None
         self._data = None
         self._notes = None
 
@@ -214,44 +228,18 @@ class Session:
 class SessionsManager:
     _location = ''
 
-    _mounted_session = None
-
-    _sessions = []
-    _sessions_proxy = {}
-
     def __init__(self):
         self._tab = Sessions()
-
-        self._load_sessions()
-
-    def _load_sessions(self) -> None:
-        sql = f'SELECT name FROM {self._tab.name}'
-        results = self._tab.execute(sql)
-
-        for name, in results:
-            self._sessions.append(Session(name))
-            self._sessions_proxy[name] = weakref.proxy(self._sessions[-1])
 
     @classmethod
     def set_location(cls, location: str) -> None:
         Session.set_location(location)
         cls._location = location
 
-    @property
-    def mounted_session(self) -> Session:
-        return self._mounted_session
-
-    def prepare_webapi_request(self, session: str) -> None:
-        if session not in self:
-            self._sessions.append(Session(session))
-            self._sessions_proxy[session] = weakref.proxy(self._sessions[-1])
-
-        setattr(webapi.request, 'current_session', self._sessions_proxy[session])
-
-    def cleanup_webapi_request(self) -> None:
-        if webapi.request.current_session and webapi.request.current_session.status is None:
-            session = self._sessions.pop(self._sessions.index(webapi.request.current_session))
-            del self._sessions_proxy[session.name]
+    @staticmethod
+    def prepare_request(session: str) -> None:
+        session = Session(session, from_sql=True)
+        setattr(webapi.request, 'current_session', session)
 
     def add_sensors_data(self, data: dict) -> None:
         for session in self.alive_sessions:
@@ -263,19 +251,21 @@ class SessionsManager:
 
     @property
     def alive_sessions(self) -> iter:
-        return iter(list(filter(lambda s: s.status == 'alive', self._sessions)))
+        sessions = []
 
-    def __iter__(self) -> iter:
-        return iter(self._sessions)
+        sql = f'SELECT name FROM {self._tab.name} WHERE status = ?'
+        results = self._tab.execute(sql, ('alive',))
 
-    def __contains__(self, session: str) -> bool:
-        return session in self._sessions_proxy
+        for name, in results:
+            sessions.append(Session(name, from_sql=False))
+
+        return sessions
 
 
 _manager = SessionsManager()
 
 add_sensors_data = _manager.add_sensors_data
-prepare_request = _manager.prepare_webapi_request
+prepare_request = _manager.prepare_request
 
 
 def load() -> None:
@@ -291,11 +281,10 @@ def requires_session() -> callable:
     def wrapper(func) -> callable:
         @functools.wraps(func)
         def decorator(*args, **kwargs):
-            if webapi.request.current_session and webapi.request.current_session.is_exists:
+            if webapi.request.current_session.status:
                 result = func(*args, **kwargs)
             else:
                 result = 'Sessions does not exist', 404
-            _manager.cleanup_webapi_request()
             return result
 
         return decorator
