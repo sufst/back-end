@@ -167,11 +167,12 @@ prepare_request = _manager.prepare_webapi_request
 def create_user(username: str, password: str, privilege: str, meta: dict) -> None:
     User(username).create(password, privilege, meta)
 
-
+# TODO: Remove Dummy Admin User - Here Just for Development
 def load() -> None:
     try:
         create_user('intermediate_server', 'sufst', 'Basic', {})
         create_user('anonymous', 'anonymous', 'Anon', {})
+        create_user('admin', 'admin', 'Admin', {})
     except KeyError:
         pass
     except Exception as err:
