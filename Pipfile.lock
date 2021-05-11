@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "7f61efbb6deb12a42aa859077522f9372b76d514e6eaa3ddf4410fda45ed24e0"
+            "sha256": "417a36401ff299f81fa4a41a68b59b266e879cef5a09b9517cb0f9ee89c29c07"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -586,13 +586,6 @@
             ],
             "index": "pypi",
             "version": "==1.15.0"
-        },
-        "sqlite3worker": {
-            "hashes": [
-                "sha256:465980404cb843ed10e77475418ab4adb1320bbf1be2455425bed6af1d11dd4d"
-            ],
-            "index": "pypi",
-            "version": "==1.1.7"
         },
         "tldextract": {
             "hashes": [
