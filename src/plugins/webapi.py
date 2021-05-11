@@ -39,7 +39,7 @@ Response = flask.Response
 
 def load() -> None:
     for f in os.listdir('./src/webapi'):
-        if f not in '__init__':
+        if '__' not in f:
             importlib.import_module(f'src.webapi.{f.split(".")[0]}')
 
 

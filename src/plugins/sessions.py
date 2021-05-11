@@ -261,11 +261,33 @@ class SessionsManager:
 
         return sessions
 
+    @property
+    def sessions(self) -> dict:
+        sql = f'SELECT name, creation, status, sensors FROM {self._tab.name}'
+
+        results = self._tab.execute(sql)
+        if results:
+            d = {}
+            for result in results:
+                name, creation, status, sensors = result
+                d[name] = {
+                    'creation': creation,
+                    'status': status,
+                    'sensors': sensors
+                }
+            return d
+        else:
+            return {}
+
 
 _manager = SessionsManager()
 
 add_sensors_data = _manager.add_sensors_data
 prepare_request = _manager.prepare_request
+
+
+def get_sessions() -> dict:
+    return _manager.sessions
 
 
 def load() -> None:

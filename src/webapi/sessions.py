@@ -20,7 +20,7 @@ from src.helpers import privileges
 import json
 
 
-def _on_sessions_get_zip() -> str or tuple:
+def _on_session_get_zip() -> str or tuple:
     session = webapi.request.current_session
 
     try:
@@ -54,11 +54,11 @@ def _on_session_get_json() -> str or tuple:
 
 
 @sessions.requires_session()
-def _on_sessions_get() -> str or tuple:
+def _on_session_get() -> str or tuple:
     content_type = webapi.request.headers.get('Content-Type')
 
     handlers = {
-        'application/zip': lambda: _on_sessions_get_zip(),
+        'application/zip': lambda: _on_session_get_zip(),
         'application/json': lambda: _on_session_get_json()
     }
 
@@ -71,7 +71,7 @@ def _on_sessions_get() -> str or tuple:
 
 
 @privileges.privilege_required(privileges.basic)
-def _on_sessions_post() -> str or tuple:
+def _on_session_post() -> str or tuple:
     data = webapi.request.get_json()
 
     fields = [
@@ -95,7 +95,7 @@ def _on_sessions_post() -> str or tuple:
         return json.dumps({'status': session.status}), 200
 
 
-def _on_sessions_patch_status(status: str) -> None:
+def _on_session_patch_status(status: str) -> None:
     session = webapi.request.current_session
 
     if status == 'dead':
@@ -104,11 +104,11 @@ def _on_sessions_patch_status(status: str) -> None:
 
 @privileges.privilege_required(privileges.basic)
 @sessions.requires_session()
-def _on_sessions_patch() -> str or tuple:
+def _on_session_patch() -> str or tuple:
     data = webapi.request.get_json()
 
     handlers = {
-        'status': lambda s: _on_sessions_patch_status(s)
+        'status': lambda s: _on_session_patch_status(s)
     }
 
     args = list(handlers.keys())
@@ -123,7 +123,7 @@ def _on_sessions_patch() -> str or tuple:
     return '', 200
 
 
-def _on_sessions_put_note(note: str) -> None:
+def _on_session_put_note(note: str) -> None:
     session = webapi.request.current_session
 
     session.add_note(note)
@@ -131,11 +131,11 @@ def _on_sessions_put_note(note: str) -> None:
 
 @privileges.privilege_required(privileges.basic)
 @sessions.requires_session()
-def _on_sessions_put() -> str or tuple:
+def _on_session_put() -> str or tuple:
     data = webapi.request.get_json()
 
     handlers = {
-        'note': lambda n: _on_sessions_put_note(n)
+        'note': lambda n: _on_session_put_note(n)
     }
 
     args = list(handlers.keys())
@@ -151,12 +151,25 @@ def _on_sessions_put() -> str or tuple:
 
 
 @webapi.endpoint('/sessions/<name>', methods=['GET', 'POST', 'PATCH', 'PUT'])
-def _sessions(name: str) -> str or tuple:
+def _session(name: str) -> str or tuple:
     sessions.prepare_request(name)
 
     return webapi.route({
-        'GET': lambda: _on_sessions_get(),
-        'POST': lambda: _on_sessions_post(),
-        'PATCH': lambda: _on_sessions_patch(),
-        'PUT': lambda: _on_sessions_put()
+        'GET': lambda: _on_session_get(),
+        'POST': lambda: _on_session_post(),
+        'PATCH': lambda: _on_session_patch(),
+        'PUT': lambda: _on_session_put()
+    })
+
+
+def _on_sessions_get() -> str:
+    sess = sessions.get_sessions()
+
+    return json.dumps(sess)
+
+
+@webapi.endpoint('/sessions', methods=['GET'])
+def _sessions() -> str or tuple:
+    return webapi.route({
+        'GET': lambda: _on_sessions_get()
     })

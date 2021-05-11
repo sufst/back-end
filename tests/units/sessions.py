@@ -129,6 +129,23 @@ class TestSessions(BaseAccountSocketIoTest):
         else:
             pass
 
+    def test_get_sessions(self):
+        req = webapi.build_request(
+            'sessions',
+            'GET',
+            content_type='application/json',
+            token=self.token
+        )
+
+        try:
+            response = request.urlopen(req)
+            f: dict = json.loads(response.read())
+            self.assertTrue("test" in f.keys())
+        except error.HTTPError as err:
+            self.fail(repr(err))
+        else:
+            pass
+
     def test_get_session_zip(self):
         req = webapi.build_request(
             'sessions/test',
@@ -182,6 +199,7 @@ def suite():
     s.addTest(TestSessions('test_session_data'))
     s.addTest(TestSessions('test_session_note'))
     s.addTest(TestSessions('test_stop_session'))
+    s.addTest(TestSessions('test_get_sessions'))
     s.addTest(TestSessions('test_get_session_zip'))
     s.addTest(TestSessions('test_get_session_json'))
 
