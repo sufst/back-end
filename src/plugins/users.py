@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import hashlib
-from src.helpers import privileges
+from src.helpers import privileges, departments
 from src.plugins import webapi, db
 import os
 import werkzeug.security
@@ -32,7 +32,7 @@ class Users(db.Table):
         'salt BLOB NOT NULL',
         'creation REAL NOT NULL',
         'privilege INTEGER NOT NULL',
-        'department TEXT NOT NULL'
+        'department INTEGER NOT NULL'
         'meta TEXT NOT NULL'
     ]
 
@@ -87,6 +87,7 @@ class User:
         if results:
             uid, username, key, salt, creation, privilege, meta = results[0]
             privilege = privileges.from_level(privilege)
+            department = departments.from_number(department)
 
             self.uid = uid
             self.username = username
@@ -120,7 +121,7 @@ class User:
 
             sql = f'INSERT INTO {self._tab.name} (username, key, salt, creation, privilege, department, meta) VALUES (?,?,?,?,?,?,?)'
             self._tab.execute(sql, (self.username, key, salt, creation,
-                                    int(privileges.from_string(privilege)), department, json.dumps(meta)))
+                                    int(privileges.from_string(privilege)), int(departments.from_string(department)), json.dumps(meta)))
 
             sql = f'SELECT id FROM {self._tab.name} WHERE username = ?'
             results = self._tab.execute(sql, (self.username,))
