@@ -25,56 +25,56 @@ class _Department:
 
 class _DepartmentElectronics(_Department): 
    def __str__(self) -> str:
-        return 'Elec'
+        return 'Electronics'
 
     def __int__(self) -> int:
         return 0
 
 class _DepartmentAero(_Department): 
    def __str__(self) -> str:
-        return 'Aero'
+        return 'Aerodynamics'
 
     def __int__(self) -> int:
         return 1
 
 class _DepartmentOperations(_Department): 
    def __str__(self) -> str:
-        return 'Oper'
+        return 'Operations'
 
     def __int__(self) -> int:
         return 2
 
 class _DepartmentPowertrain(_Department): 
    def __str__(self) -> str:
-        return 'powertr'
+        return 'Powertrain'
 
     def __int__(self) -> int:
         return 3
 
 class _DepartmentVehiclePerformance(_Department): 
    def __str__(self) -> str:
-        return 'vehiclePer'
+        return 'Vehicle Performance'
 
     def __int__(self) -> int:
         return 4
 
 class _DepartmentRaceEngineering(_Department): 
    def __str__(self) -> str:
-        return 'raceEng'
+        return 'Race Engineering'
 
     def __int__(self) -> int:
         return 5
 
 class _DepartmentTier1(_Department): 
    def __str__(self) -> str:
-        return 'tier1'
+        return 'Tier 1'
 
     def __int__(self) -> int:
         return 6
 
 class _DepartmentNone(_Department): 
    def __str__(self) -> str:
-        return 'noDept'
+        return 'NON SPECIFIED'
 
     def __int__(self) -> int:
         return 7
