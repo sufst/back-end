@@ -32,6 +32,7 @@ class Users(db.Table):
         'salt BLOB NOT NULL',
         'creation REAL NOT NULL',
         'privilege INTEGER NOT NULL',
+        'department TEXT NOT NULL'
         'meta TEXT NOT NULL'
     ]
 
@@ -39,7 +40,7 @@ class Users(db.Table):
 class User:
     _tab = Users()
 
-    def __init__(self, username: str = None, uid: int = None, privilege: str = None):
+    def __init__(self, username: str = None, uid: int = None, privilege: str = None, department: str = None):
         self.uid = uid
         self.username = username
         self.key = None
@@ -47,6 +48,7 @@ class User:
         self.meta = {}
         self.creation = None
         self.privilege = privilege
+        self.department = department
 
     def update_username(self, new: str) -> None:
         sql = f'UPDATE {self._tab.name} SET username = ? WHERE id = ?'
@@ -75,6 +77,11 @@ class User:
         self._tab.execute(sql, (int(privileges.from_string(new)), self.uid))
         self.privilege = new
 
+    def update_department(self, new: str) -> None: 
+        sql = f'UPDATE {self._tab.name} SET department = ? WHERE id = ?'
+        self._tab.execute(sql, (int(department.from_string(new)), self.uid))
+        self.department = new
+
     def _from_sql(self, sql: str, args: tuple) -> object:
         results = self._tab.execute(sql, args)
         if results:
@@ -87,16 +94,17 @@ class User:
             self.salt = salt
             self.creation = creation
             self.privilege = privilege
+            self.department = department
             self.meta = meta
 
         return self
 
     def from_uid(self, uid: int) -> object:
-        sql = f'SELECT id, username, key, salt, creation, privilege, meta FROM {self._tab.name} WHERE id = ?'
+        sql = f'SELECT id, username, key, salt, creation, privilege, department, meta FROM {self._tab.name} WHERE id = ?'
         return self._from_sql(sql, (uid,))
 
     def from_username(self) -> object:
-        sql = f'SELECT id, username, key, salt, creation, privilege, meta FROM {self._tab.name} WHERE username = ?'
+        sql = f'SELECT id, username, key, salt, creation, privilege, department, meta FROM {self._tab.name} WHERE username = ?'
         return self._from_sql(sql, (self.username,))
 
     def create(self, password: str, privilege: str, meta: dict) -> None:
@@ -110,9 +118,9 @@ class User:
             key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100000)
             creation = time()
 
-            sql = f'INSERT INTO {self._tab.name} (username, key, salt, creation, privilege, meta) VALUES (?,?,?,?,?,?)'
+            sql = f'INSERT INTO {self._tab.name} (username, key, salt, creation, privilege, department, meta) VALUES (?,?,?,?,?,?,?)'
             self._tab.execute(sql, (self.username, key, salt, creation,
-                                    int(privileges.from_string(privilege)), json.dumps(meta)))
+                                    int(privileges.from_string(privilege)), department, json.dumps(meta)))
 
             sql = f'SELECT id FROM {self._tab.name} WHERE username = ?'
             results = self._tab.execute(sql, (self.username,))
@@ -122,6 +130,7 @@ class User:
             self.salt = salt
             self.creation = creation
             self.privilege = privilege
+            self.department = department
             self.meta = meta
 
     def auth(self, password: str) -> str:
@@ -164,15 +173,15 @@ _manager = UsersManager()
 prepare_request = _manager.prepare_webapi_request
 
 
-def create_user(username: str, password: str, privilege: str, meta: dict) -> None:
-    User(username).create(password, privilege, meta)
+def create_user(username: str, password: str, privilege: str, department: str, meta: dict) -> None:
+    User(username).create(password, privilege department, meta)
 
 # TODO: Remove Dummy Admin User - Here Just for Development
 def load() -> None:
     try:
-        create_user('intermediate_server', 'sufst', 'Basic', {})
-        create_user('anonymous', 'anonymous', 'Anon', {})
-        create_user('admin', 'admin', 'Admin', {})
+        create_user('intermediate_server', 'sufst', 'Basic', 'NON SPECIFIED', {})
+        create_user('anonymous', 'anonymous', 'Anon', 'NON SPECIFIED', {})
+        create_user('admin', 'admin', 'Admin', 'Electronics', {})
     except KeyError:
         pass
     except Exception as err:
