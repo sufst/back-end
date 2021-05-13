@@ -29,6 +29,7 @@ def _on_user_get() -> str or tuple:
             'username': u.username,
             'creation': u.creation,
             'privilege': str(u.privilege),
+            'department': str(department)
             'meta': u.meta
         }
 
@@ -59,6 +60,11 @@ def _on_user_patch_privilege(new: str) -> None:
     u = webapi.current_user
     u.update_privilege(new)
 
+@privileges.privilege_required(privileges.admin)
+def _on_user_patch_department(new: str) -> None:
+    u = webapi.current_user
+    u.update_department(new)
+
 
 @privileges.privilege_required(privileges.basic)
 def _on_user_patch() -> str or tuple:
@@ -68,7 +74,8 @@ def _on_user_patch() -> str or tuple:
         'username': lambda new: _on_user_patch_username(new),
         'password': lambda new: _on_user_patch_password(new),
         'meta': lambda new: _on_user_patch_meta(new),
-        'privilege': lambda new: _on_user_patch_privilege(new)
+        'privilege': lambda new: _on_user_patch_privilege(new),
+        'department': lambda new: _on_user_patch_department(new)
     }
 
     args = list(handlers.keys())
