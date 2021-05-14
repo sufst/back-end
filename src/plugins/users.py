@@ -79,7 +79,7 @@ class User:
 
     def update_department(self, new: str) -> None: 
         sql = f'UPDATE {self._tab.name} SET department = ? WHERE id = ?'
-        self._tab.execute(sql, (int(department.from_string(new)), self.uid))
+        self._tab.execute(sql, (int(departments.from_string(new)), self.uid))
         self.department = new
 
     def _from_sql(self, sql: str, args: tuple) -> object:

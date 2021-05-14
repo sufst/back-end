@@ -85,9 +85,11 @@ def _on_users_patch_privilege(new: str) -> None:
     u = webapi.request.wanted_user
     u.update_privilege(new)
 
+
 def _on_users_patch_department(new: str) -> None:
     u = webapi.request.wanted_user
     u.update_department(new)
+
 
 def _on_users_patch() -> str or tuple:
     data = webapi.request.get_json()

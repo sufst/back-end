@@ -60,6 +60,7 @@ def _on_user_patch_privilege(new: str) -> None:
     u = webapi.current_user
     u.update_privilege(new)
 
+
 @privileges.privilege_required(privileges.admin)
 def _on_user_patch_department(new: str) -> None:
     u = webapi.current_user
