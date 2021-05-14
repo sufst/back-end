@@ -31,7 +31,7 @@ class TestAdminAccount(BaseAccountTests):
         self.password = 'testAdmin'
 
         try:
-            users.create_user(self.username, self.password, 'Admin', {})
+            users.create_user(self.username, self.password, 'Admin', 'Tier 1', {})
         except KeyError:
             pass
 
@@ -43,6 +43,7 @@ class TestAdminAccount(BaseAccountTests):
             'POST',
             data={'password': 'password',
                   'privilege': 'Basic',
+                  'department': 'Tier 1'
                   'meta': {
                       'dept': 'Electronics',
                       'memberType': 'Member'
@@ -83,7 +84,9 @@ class TestAdminAccount(BaseAccountTests):
             response = request.urlopen(req)
             meta = json.loads(response.read())
             self.assertTrue('privilege' in meta)
+            self.assertTrue('department' in meta)
             self.assertTrue(meta['privilege'] == 'Basic')
+            self.assertTrue(meta['department'] == 'Tier 1')
         except error.HTTPError as err:
             self.fail(repr(err))
         else:
@@ -116,7 +119,9 @@ class TestAdminAccount(BaseAccountTests):
             response = request.urlopen(req)
             meta = json.loads(response.read())
             self.assertTrue('privilege' in meta)
-            self.assertTrue(meta['privilege'] == 'Admin')
+            self.assertTrue('department' in meta)
+            self.assertTrue(meta['privilege'] == 'Basic')
+            self.assertTrue(meta['department'] == 'Tier 1')
         except error.HTTPError as err:
             self.fail(repr(err))
         else:
