@@ -29,7 +29,7 @@ def _on_user_get() -> str or tuple:
             'username': u.username,
             'creation': u.creation,
             'privilege': str(u.privilege),
-            'department': str(department)
+            'department': str(u.department)
             'meta': u.meta
         }
 

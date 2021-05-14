@@ -85,7 +85,7 @@ class User:
     def _from_sql(self, sql: str, args: tuple) -> object:
         results = self._tab.execute(sql, args)
         if results:
-            uid, username, key, salt, creation, privilege, meta = results[0]
+            uid, username, key, salt, creation, privilege, department, meta = results[0]
             privilege = privileges.from_level(privilege)
             department = departments.from_number(department)
 
