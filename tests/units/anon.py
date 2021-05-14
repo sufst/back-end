@@ -28,7 +28,7 @@ class TestAnonAccount(BaseAccountTests):
         self.password = 'anonymous'
 
         try:
-            users.create_user('dummyAnon', 'dummyAnon', 'Basic', {})
+            users.create_user('dummyAnon', 'dummyAnon', 'Basic', 'Electronics', {})
         except KeyError:
             pass
 
@@ -40,8 +40,8 @@ class TestAnonAccount(BaseAccountTests):
             'POST',
             data={'password': 'password',
                   'privilege': 'Basic',
+                  'department': 'Electronics',
                   'meta': {
-                      'dept': 'Electronics',
                       'memberType': 'Member'
                   }},
             content_type='application/json'
@@ -110,6 +110,36 @@ class TestAnonAccount(BaseAccountTests):
             self.assertTrue(err.code == 401)
         else:
             pass
+
+    def test_change_department(self):
+        req = webapi.build_request(
+            'user',
+            'PATCH',
+            token=self.token,
+            data={'department': 'Electronics'},
+            content_type='application/json',
+        )
+
+        try:
+            request.urlopen(req)
+        except error.HTTPError as err:
+            self.assertTrue(err.code == 401)
+        else:
+            self.fail('Anon User changed department')
+
+    def test_get_changed_department(self):
+        req = webapi.build_request(
+            'user',
+            'GET',
+            token=self.token
+        )
+
+        try:
+            request.urlopen(req)
+        except error.HTTPError as err:
+            self.assertTrue(err.code == 401)
+        else:
+            self.fail('Anon User should not access GET')
 
     def test_start_session(self):
         req = webapi.build_request(
@@ -250,6 +280,10 @@ def suite():
     s.addTest(TestAnonAccount('test_get_dummy_user'))
     s.addTest(TestAnonAccount('test_raise_dummy_privilege'))
     s.addTest(TestAnonAccount('test_get_dummy_admin_raised'))
+
+    s.addTest(TestAnonAccount('test_change_department'))
+    s.addTest(TestAnonAccount('test_get_changed_department'))
+
     s.addTest(TestAnonAccount('test_start_session'))
     s.addTest(TestAnonAccount('test_stop_session'))
     s.addTest(TestAnonAccount('test_get_session_json'))

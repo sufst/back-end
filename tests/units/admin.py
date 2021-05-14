@@ -31,7 +31,7 @@ class TestAdminAccount(BaseAccountTests):
         self.password = 'testAdmin'
 
         try:
-            users.create_user(self.username, self.password, 'Admin', {})
+            users.create_user(self.username, self.password, 'Admin', 'Tier 1', {})
         except KeyError:
             pass
 
@@ -43,8 +43,8 @@ class TestAdminAccount(BaseAccountTests):
             'POST',
             data={'password': 'password',
                   'privilege': 'Basic',
+                  'department': 'Tier 1',
                   'meta': {
-                      'dept': 'Electronics',
                       'memberType': 'Member'
                   }},
             content_type='application/json',
@@ -83,7 +83,9 @@ class TestAdminAccount(BaseAccountTests):
             response = request.urlopen(req)
             meta = json.loads(response.read())
             self.assertTrue('privilege' in meta)
+            self.assertTrue('department' in meta)
             self.assertTrue(meta['privilege'] == 'Basic')
+            self.assertTrue(meta['department'] == 'Tier 1')
         except error.HTTPError as err:
             self.fail(repr(err))
         else:
@@ -101,7 +103,7 @@ class TestAdminAccount(BaseAccountTests):
         try:
             request.urlopen(req)
         except error.HTTPError as err:
-            self.fail(repr(err))
+            self.fail(err.reason)
         else:
             pass
 
@@ -116,7 +118,114 @@ class TestAdminAccount(BaseAccountTests):
             response = request.urlopen(req)
             meta = json.loads(response.read())
             self.assertTrue('privilege' in meta)
+            self.assertTrue('department' in meta)
             self.assertTrue(meta['privilege'] == 'Admin')
+            self.assertTrue(meta['department'] == 'Tier 1')
+        except error.HTTPError as err:
+            self.fail(repr(err))
+        else:
+            pass
+
+    def test_change_dummy_department(self): 
+        req = webapi.build_request(
+            'users/dummyAdmin',
+            'PATCH',
+            token=self.token,
+            data={'department': 'Electronics'},
+            content_type='application/json'
+        )
+
+        try:
+            request.urlopen(req)
+        except error.HTTPError as err:
+            self.fail(f'{err.reason}: {err.read()}')
+        else:
+            pass
+
+    def test_get_dummy_changed_department(self):
+        req = webapi.build_request(
+            'users/dummyAdmin',
+            'GET',
+            token=self.token
+        )
+
+        try:
+            response = request.urlopen(req)
+            meta = json.loads(response.read())
+            self.assertTrue('privilege' in meta)
+            self.assertTrue('department' in meta)
+            self.assertTrue(meta['privilege'] == 'Admin')
+            self.assertTrue(meta['department'] == 'Electronics')
+        except error.HTTPError as err:
+            self.fail(repr(err))
+        else:
+            pass
+
+    def test_change_department(self): 
+        req = webapi.build_request(
+            'user',
+            'PATCH',
+            token=self.token,
+            data={'department': 'Electronics'},
+            content_type='application/json',
+        )
+
+        try:
+            request.urlopen(req)
+        except error.HTTPError as err:
+            self.fail(err.reason)
+        else:
+            pass
+
+    def test_get_changed_department(self):
+        req = webapi.build_request(
+            'user',
+            'GET',
+            token=self.token
+        )
+
+        try:
+            response = request.urlopen(req)
+            meta = json.loads(response.read())
+            self.assertTrue('privilege' in meta)
+            self.assertTrue('department' in meta)
+            self.assertTrue(meta['privilege'] == 'Admin')
+            self.assertTrue(meta['department'] == 'Electronics')
+        except error.HTTPError as err:
+            self.fail(repr(err))
+        else:
+            pass
+
+    def test_change_wrong_department(self): 
+        req = webapi.build_request(
+            'user',
+            'PATCH',
+            token=self.token,
+            data={'department': 'WRONG'},
+            content_type='application/json',
+        )
+
+        try:
+            request.urlopen(req)
+        except error.HTTPError as err:
+            self.assertTrue(err.code == 400)
+        else:
+            self.fail('Back-End accepted switching to wrong department ')
+
+    def test_get_did_not_change_department(self):
+        req = webapi.build_request(
+            'user',
+            'GET',
+            token=self.token
+        )
+
+        try:
+            response = request.urlopen(req)
+            meta = json.loads(response.read())
+            self.assertTrue('privilege' in meta)
+            self.assertTrue('department' in meta)
+            self.assertTrue(meta['privilege'] == 'Admin')
+            self.assertTrue(meta['department'] == 'Electronics')
         except error.HTTPError as err:
             self.fail(repr(err))
         else:
@@ -278,6 +387,14 @@ def suite():
     s.addTest(TestAdminAccount('test_get_dummy_user'))
     s.addTest(TestAdminAccount('test_raise_dummy_privilege'))
     s.addTest(TestAdminAccount('test_get_dummy_admin_raised'))
+
+    s.addTest(TestAdminAccount('test_change_dummy_department'))
+    s.addTest(TestAdminAccount('test_get_dummy_changed_department'))
+    s.addTest(TestAdminAccount('test_change_department'))
+    s.addTest(TestAdminAccount('test_get_changed_department'))
+    s.addTest(TestAdminAccount('test_change_wrong_department'))
+    s.addTest(TestAdminAccount('test_get_did_not_change_department'))
+
     s.addTest(TestAdminAccount('test_start_session'))
     s.addTest(TestAdminAccount('test_stop_session'))
     s.addTest(TestAdminAccount('test_get_session_json'))

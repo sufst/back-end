@@ -32,7 +32,7 @@ class TestSessions(BaseAccountSocketIoTest):
         self.password = 'testDeveloper'
 
         try:
-            users.create_user(self.username, self.password, 'Developer', {})
+            users.create_user(self.username, self.password, 'Developer', 'Electronics', {})
         except KeyError:
             pass
 

@@ -26,6 +26,7 @@ def _on_users_post() -> str or tuple:
     fields = [
         'password',
         'privilege',
+        'department',
         'meta'
     ]
 
@@ -35,10 +36,11 @@ def _on_users_post() -> str or tuple:
     user = webapi.request.wanted_user
     password = data['password']
     privilege = data['privilege']
+    department = data['department']
     meta = data['meta']
 
     try:
-        user.create(password, privilege, meta)
+        user.create(password, privilege, department, meta)
         return '', 200
     except Exception as error:
         print(error)
@@ -53,6 +55,7 @@ def _on_users_get() -> str or tuple:
             'username': u.username,
             'creation': u.creation,
             'privilege': str(u.privilege),
+            'department': str(u.department),
             'meta': u.meta
         }
 
@@ -83,6 +86,11 @@ def _on_users_patch_privilege(new: str) -> None:
     u.update_privilege(new)
 
 
+def _on_users_patch_department(new: str) -> None:
+    u = webapi.request.wanted_user
+    u.update_department(new)
+
+
 def _on_users_patch() -> str or tuple:
     data = webapi.request.get_json()
 
@@ -90,7 +98,8 @@ def _on_users_patch() -> str or tuple:
         'username': lambda new: _on_users_patch_username(new),
         'password': lambda new: _on_users_patch_password(new),
         'meta': lambda new: _on_users_patch_meta(new),
-        'privilege': lambda new: _on_users_patch_privilege(new)
+        'privilege': lambda new: _on_users_patch_privilege(new),
+        'department': lambda new: _on_users_patch_department(new)
     }
 
     args = list(handlers.keys())

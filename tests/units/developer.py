@@ -31,7 +31,7 @@ class TestDeveloperAccount(BaseAccountTests):
         self.password = 'testDeveloper'
 
         try:
-            users.create_user(self.username, self.password, 'Developer', {})
+            users.create_user(self.username, self.password, 'Developer', 'Tier 1', {})
         except KeyError:
             pass
 
@@ -43,8 +43,8 @@ class TestDeveloperAccount(BaseAccountTests):
             'POST',
             data={'password': 'password',
                   'privilege': 'Basic',
+                  'department': 'Tier 1',
                   'meta': {
-                      'dept': 'Electronics',
                       'memberType': 'Member'
                   }},
             content_type='application/json',
@@ -67,6 +67,111 @@ class TestDeveloperAccount(BaseAccountTests):
 
         try:
             request.urlopen(req)
+        except error.HTTPError as err:
+            self.fail(repr(err))
+        else:
+            pass
+
+    def test_change_dummy_department(self):
+        req = webapi.build_request(
+            'users/developer',
+            'PATCH',
+            token=self.token,
+            data={'department': 'Electronics'},
+            content_type='application/json'
+        )
+
+        try:
+            request.urlopen(req)
+        except error.HTTPError as err:
+            self.fail(f'{err.reason}: {err.read()}')
+        else:
+            pass
+
+    def test_get_dummy_changed_department(self):
+        req = webapi.build_request(
+            'users/developer',
+            'GET',
+            token=self.token
+        )
+
+        try:
+            response = request.urlopen(req)
+            meta = json.loads(response.read())
+            self.assertTrue('privilege' in meta)
+            self.assertTrue('department' in meta)
+            self.assertTrue(meta['privilege'] == 'Basic')
+            self.assertTrue(meta['department'] == 'Electronics')
+        except error.HTTPError as err:
+            self.fail(repr(err))
+        else:
+            pass
+
+    def test_change_department(self):
+        req = webapi.build_request(
+            'user',
+            'PATCH',
+            token=self.token,
+            data={'department': 'Electronics'},
+            content_type='application/json',
+        )
+
+        try:
+            request.urlopen(req)
+        except error.HTTPError as err:
+            self.fail(err.reason)
+        else:
+            pass
+
+    def test_get_changed_department(self):
+        req = webapi.build_request(
+            'user',
+            'GET',
+            token=self.token
+        )
+
+        try:
+            response = request.urlopen(req)
+            meta = json.loads(response.read())
+            self.assertTrue('privilege' in meta)
+            self.assertTrue('department' in meta)
+            self.assertTrue(meta['privilege'] == 'Developer')
+            self.assertTrue(meta['department'] == 'Electronics')
+        except error.HTTPError as err:
+            self.fail(repr(err))
+        else:
+            pass
+
+    def test_change_wrong_department(self):
+        req = webapi.build_request(
+            'user',
+            'PATCH',
+            token=self.token,
+            data={'department': 'WRONG'},
+            content_type='application/json',
+        )
+
+        try:
+            request.urlopen(req)
+        except error.HTTPError as err:
+            self.assertTrue(err.code == 400)
+        else:
+            self.fail('Back-End accepted switching to wrong department ')
+
+    def test_get_didnot_change_department(self):
+        req = webapi.build_request(
+            'user',
+            'GET',
+            token=self.token
+        )
+
+        try:
+            response = request.urlopen(req)
+            meta = json.loads(response.read())
+            self.assertTrue('privilege' in meta)
+            self.assertTrue('department' in meta)
+            self.assertTrue(meta['privilege'] == 'Developer')
+            self.assertTrue(meta['department'] == 'Electronics')
         except error.HTTPError as err:
             self.fail(repr(err))
         else:
@@ -225,6 +330,14 @@ def suite():
 
     s.addTest(TestDeveloperAccount('test_create_user'))
     s.addTest(TestDeveloperAccount('test_get_user'))
+
+    s.addTest(TestDeveloperAccount('test_change_dummy_department'))
+    s.addTest(TestDeveloperAccount('test_get_dummy_changed_department'))
+    s.addTest(TestDeveloperAccount('test_change_department'))
+    s.addTest(TestDeveloperAccount('test_get_changed_department'))
+    s.addTest(TestDeveloperAccount('test_change_wrong_department'))
+    s.addTest(TestDeveloperAccount('test_get_didnot_change_department'))
+
     s.addTest(TestDeveloperAccount('test_start_session'))
     s.addTest(TestDeveloperAccount('test_stop_session'))
     s.addTest(TestDeveloperAccount('test_get_session_json'))

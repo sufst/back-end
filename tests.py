@@ -17,6 +17,7 @@
 """
 import unittest
 from tests.helpers import config, sessions
+import time
 import os
 import importlib
 from tests.plugins import db
@@ -53,6 +54,8 @@ def run() -> None:
     pro = Process(target=server.run, args=('tests/config_test.ini',))
     pro.start()
 
+    time.sleep(4)
+
     for f in os.listdir('./tests/plugins'):
         if f not in '__init__':
             module = importlib.import_module(f'tests.plugins.{f.split(".")[0]}')
@@ -60,7 +63,6 @@ def run() -> None:
                 module.load()
 
     run_all_units()
-    # run_unit('sessions')
 
     pro.kill()
 
