@@ -32,7 +32,7 @@ class Users(db.Table):
         'salt BLOB NOT NULL',
         'creation REAL NOT NULL',
         'privilege INTEGER NOT NULL',
-        'department INTEGER NOT NULL'
+        'department INTEGER NOT NULL',
         'meta TEXT NOT NULL'
     ]
 
@@ -108,7 +108,7 @@ class User:
         sql = f'SELECT id, username, key, salt, creation, privilege, department, meta FROM {self._tab.name} WHERE username = ?'
         return self._from_sql(sql, (self.username,))
 
-    def create(self, password: str, privilege: str, meta: dict) -> None:
+    def create(self, password: str, privilege: str, department: str, meta: dict) -> None:
         sql = f'SELECT id FROM {self._tab.name} WHERE username = ?'
         results = self._tab.execute(sql, (self.username,))
 
@@ -175,7 +175,7 @@ prepare_request = _manager.prepare_webapi_request
 
 
 def create_user(username: str, password: str, privilege: str, department: str, meta: dict) -> None:
-    User(username).create(password, privilege department, meta)
+    User(username).create(password, privilege, department, meta)
 
 # TODO: Remove Dummy Admin User - Here Just for Development
 def load() -> None:

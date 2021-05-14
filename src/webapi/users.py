@@ -26,7 +26,7 @@ def _on_users_post() -> str or tuple:
     fields = [
         'password',
         'privilege',
-        'department'
+        'department',
         'meta'
     ]
 
@@ -55,7 +55,7 @@ def _on_users_get() -> str or tuple:
             'username': u.username,
             'creation': u.creation,
             'privilege': str(u.privilege),
-            'department': str(u.department)
+            'department': str(u.department),
             'meta': u.meta
         }
 

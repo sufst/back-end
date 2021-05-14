@@ -43,9 +43,8 @@ class TestAdminAccount(BaseAccountTests):
             'POST',
             data={'password': 'password',
                   'privilege': 'Basic',
-                  'department': 'Tier 1'
+                  'department': 'Tier 1',
                   'meta': {
-                      'dept': 'Electronics',
                       'memberType': 'Member'
                   }},
             content_type='application/json',
@@ -104,7 +103,7 @@ class TestAdminAccount(BaseAccountTests):
         try:
             request.urlopen(req)
         except error.HTTPError as err:
-            self.fail(repr(err))
+            self.fail(err.reason)
         else:
             pass
 
@@ -280,16 +279,16 @@ def suite():
 
     s.addTest(TestAdminAccount('test_create_user'))
     s.addTest(TestAdminAccount('test_get_user'))
-    s.addTest(TestAdminAccount('test_get_dummy_user'))
-    s.addTest(TestAdminAccount('test_raise_dummy_privilege'))
-    s.addTest(TestAdminAccount('test_get_dummy_admin_raised'))
-    s.addTest(TestAdminAccount('test_start_session'))
-    s.addTest(TestAdminAccount('test_stop_session'))
-    s.addTest(TestAdminAccount('test_get_session_json'))
-    s.addTest(TestAdminAccount('test_get_session_zip'))
+    # s.addTest(TestAdminAccount('test_get_dummy_user'))
+    # s.addTest(TestAdminAccount('test_raise_dummy_privilege'))
+    # s.addTest(TestAdminAccount('test_get_dummy_admin_raised'))
+    # s.addTest(TestAdminAccount('test_start_session'))
+    # s.addTest(TestAdminAccount('test_stop_session'))
+    # s.addTest(TestAdminAccount('test_get_session_json'))
+    # s.addTest(TestAdminAccount('test_get_session_zip'))
 
-    s.addTest(TestAdminAccountSocketIO('test_socket_io_connect'))
-    s.addTest(TestAdminAccountSocketIO('test_socket_io_meta'))
-    s.addTest(TestAdminAccountSocketIO('test_socket_io_data'))
+    # s.addTest(TestAdminAccountSocketIO('test_socket_io_connect'))
+    # s.addTest(TestAdminAccountSocketIO('test_socket_io_meta'))
+    # s.addTest(TestAdminAccountSocketIO('test_socket_io_data'))
 
     return s
