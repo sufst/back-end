@@ -142,7 +142,6 @@ class TestAdminAccount(BaseAccountTests):
         else:
             pass
 
-
     def test_get_dummy_changed_department(self):
         req = webapi.build_request(
             'users/dummyAdmin',
@@ -162,7 +161,6 @@ class TestAdminAccount(BaseAccountTests):
         else:
             pass
 
-    
     def test_change_department(self): 
         req = webapi.build_request(
             'user',
@@ -178,7 +176,6 @@ class TestAdminAccount(BaseAccountTests):
             self.fail(err.reason)
         else:
             pass
-
 
     def test_get_changed_department(self):
         req = webapi.build_request(
@@ -199,7 +196,6 @@ class TestAdminAccount(BaseAccountTests):
         else:
             pass
 
-
     def test_change_wrong_department(self): 
         req = webapi.build_request(
             'user',
@@ -215,9 +211,8 @@ class TestAdminAccount(BaseAccountTests):
             self.assertTrue(err.code == 400)
         else:
             self.fail('Back-End accepted switching to wrong department ')
-            
 
-    def test_get_didnot_change_department(self):
+    def test_get_did_not_change_department(self):
         req = webapi.build_request(
             'user',
             'GET',
@@ -398,7 +393,7 @@ def suite():
     s.addTest(TestAdminAccount('test_change_department'))
     s.addTest(TestAdminAccount('test_get_changed_department'))
     s.addTest(TestAdminAccount('test_change_wrong_department'))
-    s.addTest(TestAdminAccount('test_get_didnot_change_department'))
+    s.addTest(TestAdminAccount('test_get_did_not_change_department'))
 
     s.addTest(TestAdminAccount('test_start_session'))
     s.addTest(TestAdminAccount('test_stop_session'))

@@ -39,30 +39,30 @@ def _on_user_get() -> str or tuple:
         return None, 404
 
 
-def _on_user_patch_username(new: str) -> None:
+def _on_user_patch_username(new: str) -> None or tuple:
     u = webapi.current_user
     u.update_username(new)
 
 
-def _on_user_patch_password(new: str) -> None:
+def _on_user_patch_password(new: str) -> None or tuple:
     u = webapi.current_user
     u.update_password(new)
 
 
-def _on_user_patch_meta(new: str) -> None:
+def _on_user_patch_meta(new: str) -> None or tuple:
     k, v = new
     u = webapi.current_user
     u.update_meta(k, v)
 
 
 @privileges.privilege_required(privileges.admin)
-def _on_user_patch_privilege(new: str) -> None:
+def _on_user_patch_privilege(new: str) -> None or tuple:
     u = webapi.current_user
     u.update_privilege(new)
 
 
 @privileges.privilege_required(privileges.admin)
-def _on_user_patch_department(new: str) -> None:
+def _on_user_patch_department(new: str) -> None or tuple:
     u = webapi.current_user
     u.update_department(new)
 
@@ -87,7 +87,9 @@ def _on_user_patch() -> str or tuple:
     try:
         for key, value in data.items():
             if key in handlers:
-                handlers[key](value)
+                rsp = handlers[key](value)
+                if rsp:
+                    return rsp
         return '', 200
     except Exception as err:
         return repr(err), 400

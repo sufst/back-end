@@ -31,7 +31,7 @@ class TestBasicAccount(BaseAccountTests):
         self.password = 'basic'
 
         try:
-            users.create_user(self.username, self.password, 'Basic', {})
+            users.create_user(self.username, self.password, 'Basic', 'Electronics', {})
         except KeyError:
             pass
 
@@ -43,8 +43,8 @@ class TestBasicAccount(BaseAccountTests):
             'POST',
             data={'password': 'password',
                   'privilege': 'Basic',
+                  'department': 'Electronics',
                   'meta': {
-                      'dept': 'Electronics',
                       'memberType': 'Member'
                   }},
             content_type='application/json',
@@ -67,6 +67,41 @@ class TestBasicAccount(BaseAccountTests):
 
         try:
             request.urlopen(req)
+        except error.HTTPError as err:
+            self.fail(repr(err))
+        else:
+            pass
+
+    def test_change_department(self):
+        req = webapi.build_request(
+            'user',
+            'PATCH',
+            token=self.token,
+            data={'department': 'Electronics'},
+            content_type='application/json',
+        )
+
+        try:
+            request.urlopen(req)
+        except error.HTTPError as err:
+            self.assertTrue(err.code == 401)
+        else:
+            self.fail('Basic User changed department')
+
+    def test_get_changed_department(self):
+        req = webapi.build_request(
+            'user',
+            'GET',
+            token=self.token
+        )
+
+        try:
+            response = request.urlopen(req)
+            meta = json.loads(response.read())
+            self.assertTrue('privilege' in meta)
+            self.assertTrue('department' in meta)
+            self.assertTrue(meta['privilege'] == 'Basic')
+            self.assertTrue(meta['department'] == 'Electronics')
         except error.HTTPError as err:
             self.fail(repr(err))
         else:
@@ -225,6 +260,10 @@ def suite():
 
     s.addTest(TestBasicAccount('test_create_user'))
     s.addTest(TestBasicAccount('test_get_user'))
+
+    s.addTest(TestBasicAccount('test_change_department'))
+    s.addTest(TestBasicAccount('test_get_changed_department'))
+
     s.addTest(TestBasicAccount('test_start_session'))
     s.addTest(TestBasicAccount('test_stop_session'))
     s.addTest(TestBasicAccount('test_get_session_json'))
