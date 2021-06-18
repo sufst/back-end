@@ -236,7 +236,6 @@ class TestAdminAccount(BaseAccountTests):
             pass
 
     def test_get_all_users(self):
-
         req = webapi.build_request(
             'users',
             'GET',
@@ -246,7 +245,7 @@ class TestAdminAccount(BaseAccountTests):
         try:
             response = request.urlopen(req)
             data = json.loads(response.read())
-            self.assertTrue(data is [users])
+            self.assertTrue('users' in data)
         except error.HTTPError as err:
             self.fail(repr(err))
         else:

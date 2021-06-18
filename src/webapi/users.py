@@ -123,22 +123,23 @@ def _on_all_users_get() -> str or tuple:
         "users": []
     }
 
-    for user in data:
-        print(user)
+    if data is not None:
+        for user in data:
+            privilege = str(privileges.from_level(user[3]))
+            department = str(departments.from_number(user[4]))
 
-        privilege = str(privileges.from_level(user[3]))
-        department = str(departments.from_number(user[4]))
+            user_object = {
+                "id": user[0],
+                "username": user[1],
+                "creation": user[2],
+                "privilege": privilege,
+                "department": department
+            }
+            response["users"].append(user_object)
 
-        user_object = {
-            "id": user[0],
-            "username": user[1],
-            "creation": user[2],
-            "privilege": privilege,
-            "department": department
-        }
-        response["users"].append(user_object)
-
-    return response, 200
+        return response, 200
+    else:
+        return 'Something went wrong', 501
 
 
 @webapi.endpoint('/users/<user>', methods=['POST', 'GET', 'PATCH'])
@@ -154,7 +155,7 @@ def _users(user: str) -> str or tuple:
 
 
 @webapi.endpoint('/users', methods=['GET'])
-# @privileges.privilege_required(privileges.admin)
+@privileges.privilege_required(privileges.admin)
 def _all_users() -> str or tuple:
     return webapi.route({
         'GET': lambda: _on_all_users_get(),
