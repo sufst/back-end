@@ -168,14 +168,26 @@ class UsersManager:
 
         return user
 
+    def fetch_all_users(self):
+        # sql = f'SELECT id, username, creation, privilege, department, meta FROM {self._tab.name} WHERE id != 1 AND id != 2'
+        sql = f'SELECT id, username, creation, privilege, department, meta FROM {self._tab.name}'
+        result = self._tab.execute(sql)
+
+        if len(result) > 0:
+            return result
+        else:
+            return []
+
 
 _manager = UsersManager()
 
 prepare_request = _manager.prepare_webapi_request
+fetch_all_users = _manager.fetch_all_users
 
 
 def create_user(username: str, password: str, privilege: str, department: str, meta: dict) -> None:
     User(username).create(password, privilege, department, meta)
+
 
 # TODO: Remove Dummy Admin User - Here Just for Development
 def load() -> None:

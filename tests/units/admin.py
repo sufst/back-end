@@ -30,8 +30,12 @@ class TestAdminAccount(BaseAccountTests):
         self.username = 'testAdmin'
         self.password = 'testAdmin'
 
+        username2 = 'testAdmin2'
+        password2 = 'testAdmin2'
+
         try:
             users.create_user(self.username, self.password, 'Admin', 'Tier 1', {})
+            users.create_user(username2, password2, 'Admin', 'Electronics', {})
         except KeyError:
             pass
 
@@ -231,6 +235,23 @@ class TestAdminAccount(BaseAccountTests):
         else:
             pass
 
+    def test_get_all_users(self):
+
+        req = webapi.build_request(
+            'users',
+            'GET',
+            token=self.token
+        )
+
+        try:
+            response = request.urlopen(req)
+            data = json.loads(response.read())
+            self.assertTrue(data is [users])
+        except error.HTTPError as err:
+            self.fail(repr(err))
+        else:
+            pass
+
     def test_start_session(self):
         req = webapi.build_request(
             'sessions/admin',
@@ -394,6 +415,8 @@ def suite():
     s.addTest(TestAdminAccount('test_get_changed_department'))
     s.addTest(TestAdminAccount('test_change_wrong_department'))
     s.addTest(TestAdminAccount('test_get_did_not_change_department'))
+
+    s.addTest(TestAdminAccount('test_get_all_users'))
 
     s.addTest(TestAdminAccount('test_start_session'))
     s.addTest(TestAdminAccount('test_stop_session'))

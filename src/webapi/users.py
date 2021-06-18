@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from src.plugins import users, webapi
-from src.helpers import privileges
+from src.helpers import privileges, departments
 import json
 
 
@@ -116,6 +116,31 @@ def _on_users_patch() -> str or tuple:
         return repr(err), 400
 
 
+def _on_all_users_get() -> str or tuple:
+    data = users.fetch_all_users()
+
+    response = {
+        "users": []
+    }
+
+    for user in data:
+        print(user)
+
+        privilege = str(privileges.from_level(user[3]))
+        department = str(departments.from_number(user[4]))
+
+        user_object = {
+            "id": user[0],
+            "username": user[1],
+            "creation": user[2],
+            "privilege": privilege,
+            "department": department
+        }
+        response["users"].append(user_object)
+
+    return response, 200
+
+
 @webapi.endpoint('/users/<user>', methods=['POST', 'GET', 'PATCH'])
 @privileges.privilege_required(privileges.admin)
 def _users(user: str) -> str or tuple:
@@ -126,3 +151,12 @@ def _users(user: str) -> str or tuple:
         'GET': lambda: _on_users_get(),
         'PATCH': lambda: _on_users_patch()
     })
+
+
+@webapi.endpoint('/users', methods=['GET'])
+# @privileges.privilege_required(privileges.admin)
+def _all_users() -> str or tuple:
+    return webapi.route({
+        'GET': lambda: _on_all_users_get(),
+    })
+
