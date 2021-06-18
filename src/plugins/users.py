@@ -169,8 +169,7 @@ class UsersManager:
         return user
 
     def fetch_all_users(self):
-        sql = f'SELECT id, username, creation, privilege, department, meta FROM {self._tab.name} WHERE id != 1 AND id != 2 AND id != 3'
-        # sql = f'SELECT id, username, creation, privilege, department, meta FROM {self._tab.name}'
+        sql = f'SELECT id, username, creation, privilege, department, meta FROM {self._tab.name} WHERE id != 1 AND id != 2'
         result = self._tab.execute(sql)
 
         if len(result) > 0:
