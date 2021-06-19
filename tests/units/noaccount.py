@@ -54,6 +54,19 @@ class TestNoAccount(BaseTest):
         else:
             self.fail()
 
+    def test_get_all_users(self):
+        req = webapi.build_request(
+            'users',
+            'GET',
+        )
+
+        try:
+            request.urlopen(req)
+        except error.HTTPError as err:
+            self.assertTrue(err.code == 401)
+        else:
+            self.fail('No Account User Got all Users')
+
     def test_get_session(self):
         req = webapi.build_request(
             'sessions/test',
@@ -134,6 +147,8 @@ def suite():
 
     s.addTest(TestNoAccount('test_create_user'))
     s.addTest(TestNoAccount('test_get_user'))
+    s.addTest(TestNoAccount('test_get_all_users'))
+
     s.addTest(TestNoAccount('test_start_session'))
     s.addTest(TestNoAccount('test_stop_session'))
     s.addTest(TestNoAccount('test_get_session_json'))

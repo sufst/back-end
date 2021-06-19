@@ -88,6 +88,20 @@ class TestBasicAccount(BaseAccountTests):
         else:
             self.fail('Basic User changed department')
 
+    def test_get_all_users(self):
+        req = webapi.build_request(
+            'users',
+            'GET',
+            token=self.token,
+        )
+
+        try:
+            request.urlopen(req)
+        except error.HTTPError as err:
+            self.assertTrue(err.code == 401)
+        else:
+            self.fail('Basic User Got all Users')
+
     def test_get_changed_department(self):
         req = webapi.build_request(
             'user',
@@ -263,6 +277,8 @@ def suite():
 
     s.addTest(TestBasicAccount('test_change_department'))
     s.addTest(TestBasicAccount('test_get_changed_department'))
+
+    s.addTest(TestBasicAccount('test_get_all_users'))
 
     s.addTest(TestBasicAccount('test_start_session'))
     s.addTest(TestBasicAccount('test_stop_session'))

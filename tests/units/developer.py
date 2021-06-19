@@ -158,6 +158,22 @@ class TestDeveloperAccount(BaseAccountTests):
         else:
             self.fail('Back-End accepted switching to wrong department ')
 
+    def test_get_all_users(self):
+        req = webapi.build_request(
+            'users',
+            'GET',
+            token=self.token
+        )
+
+        try:
+            response = request.urlopen(req)
+            data = json.loads(response.read())
+            self.assertTrue('users' in data)
+        except error.HTTPError as err:
+            self.fail(repr(err))
+        else:
+            pass
+
     def test_get_didnot_change_department(self):
         req = webapi.build_request(
             'user',
@@ -337,6 +353,8 @@ def suite():
     s.addTest(TestDeveloperAccount('test_get_changed_department'))
     s.addTest(TestDeveloperAccount('test_change_wrong_department'))
     s.addTest(TestDeveloperAccount('test_get_didnot_change_department'))
+
+    s.addTest(TestDeveloperAccount('test_get_all_users'))
 
     s.addTest(TestDeveloperAccount('test_start_session'))
     s.addTest(TestDeveloperAccount('test_stop_session'))

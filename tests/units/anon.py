@@ -141,6 +141,20 @@ class TestAnonAccount(BaseAccountTests):
         else:
             self.fail('Anon User should not access GET')
 
+    def test_get_all_users(self):
+        req = webapi.build_request(
+            'users',
+            'GET',
+            token=self.token,
+        )
+
+        try:
+            request.urlopen(req)
+        except error.HTTPError as err:
+            self.assertTrue(err.code == 401)
+        else:
+            self.fail('Anonymous User Got all Users')
+
     def test_start_session(self):
         req = webapi.build_request(
             'sessions/anon',
@@ -283,6 +297,8 @@ def suite():
 
     s.addTest(TestAnonAccount('test_change_department'))
     s.addTest(TestAnonAccount('test_get_changed_department'))
+
+    s.addTest(TestAnonAccount('test_get_all_users'))
 
     s.addTest(TestAnonAccount('test_start_session'))
     s.addTest(TestAnonAccount('test_stop_session'))
