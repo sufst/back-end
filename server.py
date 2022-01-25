@@ -17,6 +17,10 @@
 """
 from src.plugins import sio, plugins_load, plugins_run
 from src.helpers import config
+from pathlib import Path
+
+# Variable of the current path, as Python struggles to get relative paths through './'
+projectPath = str(Path(__file__).parents[0])
 
 
 def run(conf: str) -> None:
@@ -38,4 +42,5 @@ if __name__ == '__main__':
           "This program comes with ABSOLUTELY NO WARRANTY;\n" +
           "This is free software, and you are welcome to redistribute it")
 
-    run('config.ini')
+
+    run(projectPath + '/config.ini')
