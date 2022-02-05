@@ -32,14 +32,21 @@ def on_connect() -> None:
 
     room = webapi.request.sid
     if results:
-        meta = results[0]
-        sio.sio.emit('meta', meta, namespace='/car', room=room)
+        meta_tuple = results[0]
+        meta = meta_tuple[0]
+
+        # request ('/sessions/<21-02-22_1>')
+        # { "meta": {}, "sensors":  }
+
+        sio.sio.emit('meta', meta_tuple, namespace='/car', room=room)
 
 
 @sio.sio.on('disconnect', '/car')
 @privileges.privilege_required(privileges.anon)
 def on_disconnect() -> None:
     user = webapi.current_user
+
+
 
 
 @sio.sio.on('meta', '/car')
@@ -49,8 +56,8 @@ def on_meta(meta: str) -> None:
 
     sql = f'INSERT INTO {tab.name} (creation, meta) VALUES (?,?)'
     tab.execute(sql, (time(), meta))
-
     sio.sio.emit('meta', meta, namespace='/car')
+    print(f"On meta: {meta}")
 
 
 @sio.sio.on('data', '/car')
