@@ -21,6 +21,7 @@ import flask_jwt_extended
 import flask_cors
 import os
 import importlib
+from server import projectPath
 
 
 app = flask.Flask(__name__)
@@ -39,7 +40,7 @@ Response = flask.Response
 
 
 def load() -> None:
-    for f in os.listdir('./src/webapi'):
+    for f in os.listdir(projectPath + '/src/webapi'):
         if '__' not in f:
             importlib.import_module(f'src.webapi.{f.split(".")[0]}')
 
