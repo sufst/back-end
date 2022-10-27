@@ -108,7 +108,6 @@ celerybeat.pid
 .venv
 env/
 backend-env/
-venv/
 ENV/
 env.bak/
 venv.bak/
@@ -131,5 +130,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 certs/
+
+.DS_Store
 
 data/

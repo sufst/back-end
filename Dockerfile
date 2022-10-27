@@ -1,5 +1,5 @@
 # Southampton University Formula Student Team Intermediate Server
-# Copyright (C) 2021 Nathan Rowley-Smith
+# Copyright (C) 2022 SUFST
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,24 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-FROM python:latest
+FROM python:3
 
-SHELL ["/bin/bash", "-c"]
+WORKDIR /usr/src/app
 
-RUN mkdir -p /var/backend-server
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY ./ /var/backend-server
-
-RUN apt-get update
-
-RUN apt-get install tree
-
-RUN pip install --no-cache-dir --upgrade pip
-
-RUN pip install --no-cache-dir -r /var/backend-server/requirements.txt
-
-RUN ls -a /var/backend-server
+COPY . .
 
 EXPOSE 5000
 
-ENTRYPOINT python /var/backend-server/server.py
+CMD [ "python", "server.py" ]

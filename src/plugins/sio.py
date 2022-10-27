@@ -22,8 +22,6 @@ from src.plugins import scheduler, webapi, db
 import pickle
 import os
 import importlib
-from server import projectPath
-
 
 class Meta(db.Table):
     columns = [
@@ -57,7 +55,7 @@ def stop() -> None:
 def load() -> None:
     sio.init_app(webapi.app)
 
-    for f in os.listdir(projectPath + '/src/namespaces'):
+    for f in os.listdir('src/namespaces'):
         if f not in '__init__':
             importlib.import_module(f'src.namespaces.{f.split(".")[0]}')
 
