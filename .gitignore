@@ -132,4 +132,6 @@ dmypy.json
 .pyre/
 certs/
 
+.DS_Store
+
 data/

@@ -1,37 +1,21 @@
-# Southampton University Formula Student Team Intermediate Server
-# Copyright (C) 2021 Nathan Rowley-Smith
+#
+# Dockerfile to build Docker image for back-end server
+# author: AndreasDemenagas (@AndreasDemenagas)
+# date: October 27th 2022
+#
+# Copyright (C) 2022 SUFST
+#
 
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+FROM python:3.9
 
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+WORKDIR /usr/src/app
 
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+COPY requirements.txt ./
+RUN pip install wheel
+RUN pip install --no-cache-dir -r requirements.txt
 
-FROM python:latest
-
-SHELL ["/bin/bash", "-c"]
-
-RUN mkdir -p /var/backend-server
-
-COPY ./ /var/backend-server
-
-RUN apt-get update
-
-RUN apt-get install tree
-
-RUN pip install --no-cache-dir --upgrade pip
-
-RUN pip install --no-cache-dir -r /var/backend-server/requirements.txt
-
-RUN ls -a /var/backend-server
+COPY . .
 
 EXPOSE 5000
 
-ENTRYPOINT python /var/backend-server/server.py
+CMD [ "python", "server.py" ]
