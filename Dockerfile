@@ -6,11 +6,12 @@
 # Copyright (C) 2022 SUFST
 #
 
-FROM python:3
+FROM python:3.9
 
 WORKDIR /usr/src/app
 
 COPY requirements.txt ./
+RUN pip install wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .

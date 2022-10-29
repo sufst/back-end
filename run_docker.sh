@@ -10,14 +10,15 @@
 
 env -i
 
+# The following commands got used craft the venv reqruirements.
+# Uncomment if necessary.
+#
 # Activates the Virtual Environment
-source venv/bin/activate
-
+# source venv/bin/activate
 # Freezes pip and generates a requirements.txt file with dependencies.
 # This file will be used later on to install everything in the Docker container
-pip freeze > requirements.txt
-
-deactivate
+# pip freeze > requirements.txt
+# deactivate
 
 # Builds the Docker image, giving it the name `sufst-back-end`
 docker build -t sufst-back-end .
