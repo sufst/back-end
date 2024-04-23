@@ -60,11 +60,11 @@ class User:
         key = hashlib.pbkdf2_hmac("sha256", new.encode("utf-8"), salt, 100000)
 
         sql = f'UPDATE {self._tab.name} SET salt = ? WHERE id = ?'
-        self._tab.execute(sql, (new, self.uid))
+        self._tab.execute(sql, (salt, self.uid))
         self.salt = salt
 
         sql = f'UPDATE {self._tab.name} SET key = ? WHERE id = ?'
-        self._tab.execute(sql, (new, self.uid))
+        self._tab.execute(sql, (key, self.uid))
         self.key = key
 
     def update_meta(self, key: str, value: any) -> None:
